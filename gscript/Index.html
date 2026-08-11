@@ -269,31 +269,55 @@
   .likert{
     display:flex;
     align-items:center;
-    gap:0;
+    gap:8px;
     justify-content:space-between;
-    max-width:560px;
+    max-width:640px;
     margin-left:2px;
   }
   .likert-option{
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:5px;
-    font-size:.72rem;
+    gap:7px;
+    font-size:.78rem;
     color:var(--text-soft);
     cursor:pointer;
     flex:1;
     text-align:center;
   }
   .likert-option input[type=radio]{
-    width:20px;height:20px;accent-color:var(--navy);cursor:pointer;
+    width:24px;height:24px;accent-color:var(--navy);cursor:pointer;
+  }
+  .likert-num{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    color:#fff;
+    font-weight:700;
+    font-size:.95rem;
+    line-height:1;
+    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 1px 2px rgba(0,0,0,.15);
+  }
+  .likert-option.level-1 .likert-num{background:#c0392b;}
+  .likert-option.level-2 .likert-num{background:#e08e45;}
+  .likert-option.level-3 .likert-num{background:#d4ac0d;}
+  .likert-option.level-4 .likert-num{background:#7cb342;}
+  .likert-option.level-5 .likert-num{background:#2e7d32;}
+  .likert-option:hover .likert-num{transform:scale(1.08);}
+  .likert-option input[type=radio]:checked + .likert-num{
+    box-shadow:0 0 0 3px #fff, 0 0 0 5px var(--navy);
+    transform:scale(1.15);
   }
   .likert-endcap{
-    font-size:.68rem;
+    font-size:.74rem;
     color:var(--text-soft);
-    max-width:70px;
+    max-width:76px;
   }
-  .likert-row-wrap{display:flex;align-items:center;gap:8px;}
+  .likert-row-wrap{display:flex;align-items:center;gap:10px;}
 
   textarea{
     width:100%;
@@ -364,7 +388,9 @@
 
   @media (max-width:600px){
     .likert{max-width:none;}
-    .likert-option{font-size:.68rem;}
+    .likert-option{font-size:.7rem;}
+    .likert-num{width:30px;height:30px;font-size:.82rem;}
+    .likert-option input[type=radio]{width:20px;height:20px;}
     header.hero h1{font-size:1.2rem;}
   }
 </style>
@@ -674,7 +700,7 @@ const ORDERED_KEYS = PART1_FIELDS.concat(
 function renderLikert(code){
   let html = '<div class="likert-row-wrap"><span class="likert-endcap">น้อยที่สุด</span><div class="likert">';
   for(let v=1; v<=5; v++){
-    html += `<label class="likert-option"><input type="radio" name="${code}" value="${v}" data-code="${code}"><span>${v}</span></label>`;
+    html += `<label class="likert-option level-${v}"><input type="radio" name="${code}" value="${v}" data-code="${code}"><span class="likert-num">${v}</span></label>`;
   }
   html += '</div><span class="likert-endcap">มากที่สุด</span></div>';
   return html;
