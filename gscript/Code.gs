@@ -6,6 +6,8 @@
 
 var SHEET_NAME = 'Responses';
 var QUESTION_SHEET_NAME = 'คำถามอ้างอิง';
+var USERNAME_HEADER = 'username';
+var RESPONDENT_PATTERN = /^res(0[1-9]|1[0-9]|2[01])$/;
 
 function doGet(e) {
   seedQuestionReferenceIfEmpty_();
@@ -71,15 +73,68 @@ function writeQuestionReference_(sheet) {
 }
 
 /**
+ * Validates a respondent code against the res01..res21 pattern used for
+ * the 21 experts in this Delphi round, normalizing case/whitespace.
+ * Throws if the code doesn't match.
+ */
+function normalizeUsername_(username) {
+  var value = String(username || '').trim().toLowerCase();
+  if (!RESPONDENT_PATTERN.test(value)) {
+    throw new Error('รหัสผู้เชี่ยวชาญไม่ถูกต้อง กรุณาระบุในรูปแบบ res01 ถึง res21');
+  }
+  return value;
+}
+
+/**
+ * Looks up an existing response row for a (already-normalized) username.
+ * Returns { timestamp } if found, or null.
+ */
+function findResponseRowByUsername_(username) {
+  var sheet = getSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var usernameCol = headers.indexOf(USERNAME_HEADER);
+  if (usernameCol === -1) return null;
+  var timestampCol = headers.indexOf('timestamp');
+
+  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  for (var i = 0; i < data.length; i++) {
+    var value = String(data[i][usernameCol] || '').trim().toLowerCase();
+    if (value === username) {
+      return { timestamp: timestampCol !== -1 ? data[i][timestampCol] : null };
+    }
+  }
+  return null;
+}
+
+/**
+ * Called from the client's login step via google.script.run, before the
+ * survey form is shown, so a respondent who already submitted sees a
+ * "already answered" message instead of the form.
+ */
+function checkRespondentStatus(username) {
+  var normalized = normalizeUsername_(username);
+  var existing = findResponseRowByUsername_(normalized);
+  return {
+    alreadySubmitted: !!existing,
+    submittedAt: existing && existing.timestamp ? new Date(existing.timestamp).toISOString() : null
+  };
+}
+
+/**
  * Called from the client via google.script.run.
- * payload = { headers: string[], answers: { [key]: string } }
- * headers gives the canonical column order (excluding the timestamp
- * column, which this function adds automatically).
+ * payload = { username: string, headers: string[], answers: { [key]: string } }
+ * headers gives the canonical column order (excluding the timestamp and
+ * username columns, which this function adds automatically).
  */
 function submitSurvey(payload) {
   if (!payload || !Array.isArray(payload.headers) || typeof payload.answers !== 'object') {
     throw new Error('ข้อมูลที่ส่งมาไม่ถูกต้อง');
   }
+  var username = normalizeUsername_(payload.username);
 
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -89,14 +144,22 @@ function submitSurvey(payload) {
       sheet.getRange(1, 1).getValue() !== '';
 
     if (!hasHeaders) {
-      var headerRow = ['timestamp'].concat(payload.headers);
+      var headerRow = ['timestamp', USERNAME_HEADER].concat(payload.headers);
       sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
       sheet.setFrozenRows(1);
+    }
+
+    // Re-check for a duplicate inside the lock: the client-side check at
+    // login time is only a UX convenience and can't prevent two
+    // concurrent submissions under the same username.
+    if (findResponseRowByUsername_(username)) {
+      throw new Error('รหัส ' + username + ' เคยตอบแบบสอบถามนี้ไปแล้ว ไม่สามารถส่งซ้ำได้');
     }
 
     var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var row = existingHeaders.map(function (header) {
       if (header === 'timestamp') return new Date();
+      if (header === USERNAME_HEADER) return username;
       return Object.prototype.hasOwnProperty.call(payload.answers, header)
         ? payload.answers[header]
         : '';

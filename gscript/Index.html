@@ -386,6 +386,29 @@
     cursor:not-allowed;
   }
 
+  #loginCard{max-width:520px;margin:40px auto;}
+  #loginCard input[type=text]{max-width:260px;text-transform:lowercase;}
+  #loginCard .submit-btn{width:100%;max-width:260px;}
+  .already-banner{
+    display:none;
+    margin-top:16px;
+    padding:14px 16px;
+    border-radius:10px;
+    background:#fff4e0;
+    border:1px solid #f0d29a;
+    color:#7a5a12;
+    font-size:.9rem;
+  }
+  .user-badge{
+    max-width:960px;
+    margin:0 auto 14px;
+    padding:8px 16px;
+    text-align:center;
+    font-size:.82rem;
+    color:var(--text-soft);
+  }
+  .user-badge b{color:var(--navy);}
+
   @media (max-width:600px){
     .likert{max-width:none;}
     .likert-option{font-size:.7rem;}
@@ -405,7 +428,7 @@
   คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
 </header>
 
-<nav class="navbar">
+<nav class="navbar" id="navbar" style="display:none;">
   <div class="navbar-inner">
     <div class="nav-links">
       <a href="#part1">ส่วนที่ 1</a>
@@ -417,13 +440,29 @@
       <a href="#part3">ส่วนที่ 3</a>
     </div>
     <div class="progress-wrap">
-      <div class="progress-label" id="progressLabel">ตอบแล้ว 0 / 133 ข้อ</div>
+      <div class="progress-label" id="progressLabel">ตอบแล้ว 0 / 127 ข้อ</div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     </div>
   </div>
 </nav>
 
 <main>
+
+  <div class="card" id="loginCard">
+    <h2>เข้าสู่ระบบผู้ตอบแบบสอบถาม</h2>
+    <p class="instructions">กรุณาระบุรหัสผู้เชี่ยวชาญของท่าน (username ที่ผู้วิจัยแจ้งไว้ เช่น res01) เพื่อเริ่มตอบแบบสอบถาม ระบบจะบันทึกรหัสนี้ไว้คู่กับคำตอบ และป้องกันไม่ให้ตอบซ้ำหากเคยตอบไปแล้ว</p>
+    <div class="field">
+      <label class="field-title" for="loginUsername">รหัสผู้เชี่ยวชาญ (username)<span class="required-mark">*</span></label>
+      <input type="text" id="loginUsername" placeholder="เช่น res01" autocomplete="off" maxlength="5">
+    </div>
+    <button class="submit-btn" id="loginBtn" type="button">เข้าสู่ระบบ</button>
+    <div class="error-banner" id="loginError"></div>
+    <div class="already-banner" id="alreadyBanner"></div>
+  </div>
+
+  <div id="surveyContent" style="display:none;">
+
+  <div class="user-badge" id="userBadge"></div>
 
   <div class="card" id="intro">
     <h2>คำชี้แจง</h2>
@@ -513,11 +552,13 @@
     <textarea id="part3_suggestion" name="part3_suggestion" placeholder="ระบุข้อเสนอแนะเพิ่มเติม (ถ้ามี)"></textarea>
   </div>
 
+  </div><!-- #surveyContent -->
+
 </main>
 
 <div class="error-banner" id="errorBanner"></div>
 
-<div class="submit-bar">
+<div class="submit-bar" id="submitBar" style="display:none;">
   <button class="submit-btn" id="submitBtn" type="button">ส่งแบบสอบถาม</button>
   <div class="submit-note">กรุณาตอบข้อคำถามให้ครบทุกข้อก่อนกดส่งแบบสอบถาม</div>
 </div>
@@ -611,6 +652,77 @@ function updateProgress(){
 buildSections();
 updateProgress();
 
+let CURRENT_USERNAME = null;
+const RESPONDENT_PATTERN = /^res(0[1-9]|1[0-9]|2[01])$/;
+
+function showSurveyUI(username){
+  CURRENT_USERNAME = username;
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('navbar').style.display = '';
+  document.getElementById('surveyContent').style.display = '';
+  document.getElementById('submitBar').style.display = '';
+  document.getElementById('userBadge').textContent = `กำลังตอบแบบสอบถามในนามผู้เชี่ยวชาญรหัส: ${username}`;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showLoginError(msg){
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideLoginError(){
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function showAlreadySubmitted(username, submittedAt){
+  const when = submittedAt
+    ? new Date(submittedAt).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'})
+    : '';
+  const el = document.getElementById('alreadyBanner');
+  el.textContent = `รหัส ${username} เคยตอบแบบสอบถามนี้ไปแล้ว${when ? ' เมื่อ ' + when : ''} ระบบไม่อนุญาตให้ตอบซ้ำ ขอบพระคุณที่ให้ความร่วมมือ`;
+  el.style.display = 'block';
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('loginUsername').disabled = true;
+}
+
+function attemptLogin(){
+  const raw = document.getElementById('loginUsername').value.trim().toLowerCase();
+  hideLoginError();
+  document.getElementById('alreadyBanner').style.display = 'none';
+
+  if(!RESPONDENT_PATTERN.test(raw)){
+    showLoginError('กรุณาระบุรหัสผู้เชี่ยวชาญให้ถูกต้องในรูปแบบ res01 ถึง res21');
+    return;
+  }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังตรวจสอบ...';
+
+  google.script.run
+    .withSuccessHandler((result)=>{
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
+      if(result && result.alreadySubmitted){
+        showAlreadySubmitted(raw, result.submittedAt);
+      } else {
+        showSurveyUI(raw);
+      }
+    })
+    .withFailureHandler((err)=>{
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
+      showLoginError('เกิดข้อผิดพลาดในการตรวจสอบรหัสผู้เชี่ยวชาญ กรุณาลองใหม่อีกครั้ง: ' + (err && err.message ? err.message : err));
+    })
+    .checkRespondentStatus(raw);
+}
+
+document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+document.getElementById('loginUsername').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') attemptLogin();
+});
+
 document.getElementById('sectionsContainer').addEventListener('change', (e)=>{
   if(e.target && e.target.type === 'radio'){
     updateProgress();
@@ -691,7 +803,7 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
       btn.textContent = 'ส่งแบบสอบถาม';
       showError('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง: ' + (err && err.message ? err.message : err));
     })
-    .submitSurvey({headers: ORDERED_KEYS, answers: answers});
+    .submitSurvey({username: CURRENT_USERNAME, headers: ORDERED_KEYS, answers: answers});
 });
 </script>
 
