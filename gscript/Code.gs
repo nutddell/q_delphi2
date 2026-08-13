@@ -125,6 +125,31 @@ function checkRespondentStatus(username) {
 }
 
 /**
+ * Retrofits a "username" column into a Responses sheet whose header row
+ * was already written by a version of this script that predates the
+ * login feature. Existing rows keep their data; their username cell is
+ * simply left blank since it was never captured at the time. No-op if
+ * the column already exists.
+ */
+function ensureUsernameColumn_(sheet) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) return;
+
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  if (headers.indexOf(USERNAME_HEADER) !== -1) return;
+
+  var timestampCol = headers.indexOf('timestamp');
+  if (timestampCol === -1) {
+    sheet.insertColumnAfter(lastCol);
+    sheet.getRange(1, lastCol + 1).setValue(USERNAME_HEADER);
+  } else {
+    var insertAt = timestampCol + 2; // 1-indexed column right after timestamp
+    sheet.insertColumnBefore(insertAt);
+    sheet.getRange(1, insertAt).setValue(USERNAME_HEADER);
+  }
+}
+
+/**
  * Called from the client via google.script.run.
  * payload = { username: string, headers: string[], answers: { [key]: string } }
  * headers gives the canonical column order (excluding the timestamp and
@@ -147,6 +172,8 @@ function submitSurvey(payload) {
       var headerRow = ['timestamp', USERNAME_HEADER].concat(payload.headers);
       sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
       sheet.setFrozenRows(1);
+    } else {
+      ensureUsernameColumn_(sheet);
     }
 
     // Re-check for a duplicate inside the lock: the client-side check at
