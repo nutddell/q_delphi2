@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบสอบถามความคิดเห็น สมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศ</title>
+<style>
+  :root{
+    --green-900:#0b3d24;
+    --green-800:#12522f;
+    --green-700:#1b6e3d;
+    --green-600:#238a4e;
+    --green-100:#e9f5ec;
+    --bg:#f4f8f5;
+    --card:#ffffff;
+    --border:#dbe7de;
+    --text:#1f2b23;
+    --text-soft:#5a6d60;
+    --sub-bg:#f4faf6;
+    --ok:#1b6e3d;
+    --danger:#c0392b;
+    /* 5-level sequential green rating scale */
+    --l1-bg:#eef6f0; --l1-text:#2f6b46; --l1-border:#cfe3d5;
+    --l2-bg:#bfe0c9; --l2-text:#1f5c3a; --l2-border:#a9d3b6;
+    --l3-bg:#8dc99e; --l3-text:#153f28; --l3-border:#74ba89;
+    --l4-bg:#4f9f68; --l4-text:#ffffff; --l4-border:#3f8a56;
+    --l5-bg:#1b6e3d; --l5-text:#ffffff; --l5-border:#0b3d24;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sarabun','Leelawadee UI','Segoe UI',Tahoma,Arial,sans-serif;
+    line-height:1.6;
+    padding-bottom:80px;
+  }
+  header.hero{
+    background:linear-gradient(135deg,var(--green-800) 0%,var(--green-900) 100%);
+    color:#fff;
+    padding:36px 20px 28px;
+    text-align:center;
+  }
+  header.hero .kicker{
+    letter-spacing:.12em;
+    font-size:.78rem;
+    text-transform:uppercase;
+    color:#cfe9d8;
+    opacity:.9;
+    margin-bottom:8px;
+  }
+  header.hero h1{
+    font-size:1.5rem;
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  header.hero p{
+    max-width:820px;
+    margin:0 auto;
+    color:#dcefe2;
+    font-size:.95rem;
+  }
+  .navbar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    box-shadow:0 2px 6px rgba(11,61,36,.08);
+  }
+  .navbar-inner{
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 16px;
+  }
+  .nav-links{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    scrollbar-width:none;
+    flex:1;
+  }
+  .nav-links::-webkit-scrollbar{display:none;}
+  .nav-links a{
+    white-space:nowrap;
+    text-decoration:none;
+    color:var(--green-800);
+    font-size:.82rem;
+    font-weight:600;
+    padding:7px 12px;
+    border-radius:999px;
+    background:var(--sub-bg);
+    border:1px solid var(--border);
+  }
+  .nav-links a:hover{background:var(--green-100);}
+  .progress-wrap{min-width:150px;text-align:right;}
+  .progress-label{font-size:.72rem;color:var(--text-soft);margin-bottom:3px;}
+  .progress-bar{width:150px;height:8px;background:var(--border);border-radius:999px;overflow:hidden;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-600),var(--green-800));transition:width .25s ease;}
+  main{max-width:960px;margin:0 auto;padding:24px 16px 40px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px 22px 26px;
+    margin-bottom:22px;
+    box-shadow:0 1px 3px rgba(11,61,36,.06);
+  }
+  .card h2{
+    font-size:1.15rem;
+    color:var(--green-800);
+    margin:0 0 6px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .instructions{font-size:.92rem;}
+  .instructions ol{padding-left:1.2em;}
+  .instructions li{margin-bottom:6px;}
+  .scale-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .scale-legend .chip{
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:.82rem;
+    flex:1 1 150px;
+    text-align:center;
+    font-weight:600;
+    border:1px solid transparent;
+  }
+  .scale-legend .chip b{font-size:1rem;margin-right:4px;}
+  .chip.l1{background:var(--l1-bg);color:var(--l1-text);border-color:var(--l1-border);}
+  .chip.l2{background:var(--l2-bg);color:var(--l2-text);border-color:var(--l2-border);}
+  .chip.l3{background:var(--l3-bg);color:var(--l3-text);border-color:var(--l3-border);}
+  .chip.l4{background:var(--l4-bg);color:var(--l4-text);border-color:var(--l4-border);}
+  .chip.l5{background:var(--l5-bg);color:var(--l5-text);border-color:var(--l5-border);}
+
+  /* Part 1 form fields */
+  .field{margin-bottom:20px;}
+  .field > label.field-title{display:block;font-weight:700;color:var(--green-800);margin-bottom:8px;font-size:.94rem;}
+  .field .required-mark{color:var(--danger);margin-left:3px;}
+  .option-row{display:flex;flex-wrap:wrap;gap:10px 22px;}
+  .option-row label{display:flex;align-items:center;gap:7px;font-size:.9rem;cursor:pointer;}
+  .option-row input[type=radio]{width:16px;height:16px;accent-color:var(--green-700);}
+  input[type=text]{
+    width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;
+    font-family:inherit;font-size:.9rem;
+  }
+  input[type=text]:focus{outline:2px solid var(--green-600);border-color:var(--green-600);}
+  .sub-input{margin-top:8px;max-width:420px;}
+
+  /* Accordion (domains) */
+  details.section-acc{
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:var(--card);
+    margin-bottom:18px;
+    overflow:hidden;
+  }
+  details.section-acc[open]{box-shadow:0 1px 3px rgba(11,61,36,.06);}
+  details.section-acc summary{
+    list-style:none;cursor:pointer;padding:16px 20px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(135deg,#eef6f0,#ffffff);
+  }
+  details.section-acc summary::-webkit-details-marker{display:none;}
+  details.section-acc summary h2{margin:0;font-size:1.08rem;color:var(--green-800);}
+  details.section-acc summary .count-pill{
+    font-size:.75rem;background:var(--green-800);color:#fff;padding:4px 10px;border-radius:999px;white-space:nowrap;
+  }
+  details.section-acc summary .chev{transition:transform .2s ease;color:var(--green-800);margin-left:10px;}
+  details.section-acc[open] summary .chev{transform:rotate(180deg);}
+  .section-body{padding:6px 20px 20px;}
+
+  .component-title{
+    font-size:.9rem;font-weight:700;color:var(--green-700);
+    margin:18px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--green-100);
+  }
+  .component-title:first-child{margin-top:6px;}
+
+  /* Item rows */
+  .item{border-top:1px solid var(--border);padding:16px 0;}
+  .item:first-child{border-top:none;}
+  .item-header{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;}
+  .badge{
+    flex:0 0 auto;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:6px;
+    color:#fff;background:var(--green-700);margin-top:2px;min-width:28px;text-align:center;
+  }
+  .item-text{margin:0;font-size:.93rem;color:var(--text);}
+
+  .likert-row-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .likert{display:flex;align-items:center;gap:8px;justify-content:flex-start;}
+  .likert-opt{position:relative;cursor:pointer;}
+  .likert-opt input[type=radio]{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .likert-opt .pill{
+    display:flex;align-items:center;justify-content:center;
+    width:42px;height:42px;border-radius:10px;font-weight:700;font-size:.95rem;
+    border:1px solid transparent;transition:transform .12s ease,box-shadow .12s ease;
+    user-select:none;
+  }
+  .likert-opt.v1 .pill{background:var(--l1-bg);color:var(--l1-text);border-color:var(--l1-border);}
+  .likert-opt.v2 .pill{background:var(--l2-bg);color:var(--l2-text);border-color:var(--l2-border);}
+  .likert-opt.v3 .pill{background:var(--l3-bg);color:var(--l3-text);border-color:var(--l3-border);}
+  .likert-opt.v4 .pill{background:var(--l4-bg);color:var(--l4-text);border-color:var(--l4-border);}
+  .likert-opt.v5 .pill{background:var(--l5-bg);color:var(--l5-text);border-color:var(--l5-border);}
+  .likert-opt:hover .pill{transform:translateY(-2px);box-shadow:0 3px 8px rgba(11,61,36,.18);}
+  .likert-opt input:checked + .pill{
+    outline:3px solid var(--green-900);outline-offset:2px;transform:scale(1.08);
+    box-shadow:0 3px 10px rgba(11,61,36,.3);
+  }
+  .likert-endcap{font-size:.72rem;color:var(--text-soft);max-width:76px;text-align:center;}
+
+  textarea{
+    width:100%;min-height:110px;padding:12px;border:1px solid var(--border);border-radius:8px;
+    font-family:inherit;font-size:.9rem;resize:vertical;
+  }
+  textarea:focus{outline:2px solid var(--green-600);border-color:var(--green-600);}
+
+  .submit-bar{max-width:960px;margin:0 auto;padding:0 16px 40px;text-align:center;}
+  button.submit-btn{
+    background:var(--green-800);color:#fff;border:none;padding:14px 40px;font-size:1rem;font-weight:700;
+    border-radius:999px;cursor:pointer;font-family:inherit;box-shadow:0 4px 10px rgba(11,61,36,.3);
+  }
+  button.submit-btn:disabled{opacity:.6;cursor:wait;}
+  button.submit-btn:hover:not(:disabled){background:var(--green-900);}
+  .submit-note{font-size:.8rem;color:var(--text-soft);margin-top:10px;}
+
+  .thankyou{
+    display:none;max-width:640px;margin:60px auto;text-align:center;background:var(--card);
+    border:1px solid var(--border);border-radius:16px;padding:44px 30px;
+  }
+  .thankyou h2{color:var(--green-800);}
+  .thankyou .ok-icon{
+    width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;
+  }
+
+  @media (max-width:600px){
+    .likert-opt .pill{width:38px;height:38px;font-size:.88rem;}
+    header.hero h1{font-size:1.2rem;}
+    .likert-endcap{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Air Pollution Control Competency Survey</div>
+  <h1>แบบสอบถามความคิดเห็นเกี่ยวกับระดับความสำคัญของสมรรถนะ</h1>
+  <p>เรื่อง การพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล<br>
+  วิจัยโดย นายอนุรักษ์ รุ่งเรือง นักศึกษาหลักสูตรบริหารธุรกิจระดับดุษฎีบัณฑิต สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์<br>
+  คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
+</header>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <div class="nav-links">
+      <a href="#part1">ส่วนที่ 1</a>
+      <a href="#sec-K">ด้านความรู้</a>
+      <a href="#sec-S">ด้านทักษะ</a>
+      <a href="#sec-A">ด้านคุณลักษณะ</a>
+      <a href="#part3">ส่วนที่ 3</a>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label" id="progressLabel">ตอบแล้ว 0 / 75 ข้อ</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="card" id="intro">
+    <h2>คำชี้แจง</h2>
+    <div class="instructions">
+      <p>แบบสอบถามฉบับนี้เป็นส่วนหนึ่งของการศึกษาในหลักสูตรบริหารธุรกิจระดับดุษฎีบัณฑิต สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์ คณะพัฒนาธุรกิจและอุตสาหกรรม มีวัตถุประสงค์เพื่อเก็บรวบรวมข้อมูลระดับความคิดเห็นเกี่ยวกับความสำคัญ/จำเป็นของสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล ข้อมูลของท่านจะถูกเก็บเป็นความลับและใช้เพื่อการวิจัยเท่านั้น</p>
+      <ol>
+        <li>โปรดพิจารณาข้อคำถามแต่ละข้อ แล้วให้คะแนนระดับความคิดเห็นของท่านว่าสมรรถนะข้อนั้นมีความสำคัญ/จำเป็นต่อผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัลมากน้อยเพียงใด โดยใช้มาตรวัดแบบลิเคิร์ท (Likert Scale) 5 ระดับ</li>
+        <li>กรุณาตอบทุกข้อให้ครบถ้วน และสามารถระบุข้อเสนอแนะเพิ่มเติมได้ในส่วนที่ 3 ท้ายแบบสอบถาม</li>
+      </ol>
+      <div class="scale-legend">
+        <div class="chip l5"><b>5</b> สำคัญมากที่สุด</div>
+        <div class="chip l4"><b>4</b> สำคัญมาก</div>
+        <div class="chip l3"><b>3</b> สำคัญปานกลาง</div>
+        <div class="chip l2"><b>2</b> สำคัญน้อย</div>
+        <div class="chip l1"><b>1</b> สำคัญน้อยที่สุด</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="part1">
+    <h2>ส่วนที่ 1 &nbsp;ข้อมูลพื้นฐานทั่วไปของผู้ตอบแบบสอบถาม</h2>
+    <p class="instructions" style="color:var(--text-soft);font-size:.85rem;margin-top:-4px;">ข้อมูลของท่านจะไม่มีการเปิดเผยต่อบุคคลอื่น และจะทำการลบข้อมูลทิ้งหลังงานวิจัยเสร็จสิ้นภายใน 3 ปี</p>
+
+    <div class="field">
+      <label class="field-title">1. เพศ<span class="required-mark">*</span></label>
+      <div class="option-row">
+        <label><input type="radio" name="gender" value="ชาย" required> ชาย</label>
+        <label><input type="radio" name="gender" value="หญิง"> หญิง</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-title">2. อายุ<span class="required-mark">*</span></label>
+      <div class="option-row">
+        <label><input type="radio" name="age" value="ต่ำกว่า 30 ปี" required> ต่ำกว่า 30 ปี</label>
+        <label><input type="radio" name="age" value="31-40 ปี"> 31-40 ปี</label>
+        <label><input type="radio" name="age" value="41-50 ปี"> 41-50 ปี</label>
+        <label><input type="radio" name="age" value="มากกว่า 51 ปี"> มากกว่า 51 ปี</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-title">3. คุณวุฒิการศึกษา<span class="required-mark">*</span></label>
+      <div class="option-row">
+        <label><input type="radio" name="edu" value="ต่ำกว่าปริญญาตรี" required> ต่ำกว่าปริญญาตรี</label>
+        <label><input type="radio" name="edu" value="ปริญญาตรี"> ปริญญาตรี</label>
+        <label><input type="radio" name="edu" value="ปริญญาโท"> ปริญญาโท</label>
+        <label><input type="radio" name="edu" value="ปริญญาเอก"> ปริญญาเอก</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-title">4. หน่วยงานที่ท่านสังกัด<span class="required-mark">*</span></label>
+      <div class="option-row">
+        <label><input type="radio" name="org_type" value="ราชการ/องค์กรของรัฐ/รัฐวิสาหกิจ" required> ราชการ/องค์กรของรัฐ/รัฐวิสาหกิจ</label>
+        <label><input type="radio" name="org_type" value="บริษัทเอกชน/เจ้าของธุรกิจ"> บริษัทเอกชน/เจ้าของธุรกิจ</label>
+        <label><input type="radio" name="org_type" value="อื่น ๆ"> อื่น ๆ</label>
+      </div>
+      <input type="text" class="sub-input" id="org_name" name="org_name" placeholder="ระบุชื่อหน่วยงาน / ระบุประเภทอื่น ๆ">
+    </div>
+
+    <div class="field">
+      <label class="field-title">5. ประสบการณ์ทำงาน<span class="required-mark">*</span></label>
+      <div class="option-row">
+        <label><input type="radio" name="exp" value="5-15 ปี" required> 5-15 ปี</label>
+        <label><input type="radio" name="exp" value="16-25 ปี"> 16-25 ปี</label>
+        <label><input type="radio" name="exp" value="26-35 ปี"> 26-35 ปี</label>
+        <label><input type="radio" name="exp" value="มากกว่า 35 ปี"> มากกว่า 35 ปี</label>
+      </div>
+    </div>
+  </div>
+
+  <div id="sectionsContainer"></div>
+
+  <div class="card" id="part3">
+    <h2>ส่วนที่ 3 &nbsp;ข้อคิดเห็นและข้อเสนอแนะเพิ่มเติม</h2>
+    <p class="instructions">หากท่านมีข้อเสนอแนะเพิ่มเติมเกี่ยวกับการพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล กรุณาระบุด้านล่างนี้</p>
+    <textarea id="suggestion" name="suggestion" placeholder="ระบุข้อเสนอแนะเพิ่มเติม (ถ้ามี)"></textarea>
+  </div>
+
+</main>
+
+<div class="submit-bar">
+  <button class="submit-btn" id="submitBtn" type="button">ส่งแบบสอบถาม</button>
+  <div class="submit-note">กรุณาตอบข้อคำถามให้ครบทุกข้อก่อนกดส่งแบบสอบถาม</div>
+</div>
+
+<div class="thankyou" id="thankyou">
+  <div class="ok-icon">&#10003;</div>
+  <h2>ขอบพระคุณสำหรับความร่วมมือ</h2>
+  <p>ผู้วิจัยขอขอบพระคุณท่านที่กรุณาสละเวลาตอบแบบสอบถามการวิจัยในครั้งนี้ ข้อมูลของท่านมีคุณค่าอย่างยิ่งต่อการพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล</p>
+  <p style="color:var(--text-soft);font-size:.85rem;">นายอนุรักษ์ รุ่งเรือง &nbsp;|&nbsp; ผู้วิจัย &nbsp;|&nbsp; anurak.r@ited.kmutnb.ac.th</p>
+</div>
+
+<script>
+/* ============================================================
+   ตั้งค่าการเชื่อมต่อ Google Sheet ผ่าน Google Apps Script Web App
+   1. สร้าง Google Sheet ใหม่ (เช่น ตั้งชื่อไฟล์ว่า "airpollution")
+   2. เปิด Extensions > Apps Script แล้ววางโค้ดจากไฟล์ airpollution_apps_script.gs
+   3. Deploy > New deployment > เลือกประเภท "Web app"
+      - Execute as: Me
+      - Who has access: Anyone
+   4. คัดลอก Web App URL ที่ได้มาวางแทนที่ค่าด้านล่างนี้
+   ============================================================ */
+const GAS_WEB_APP_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+const DOMAINS = [
+  {
+    key:'K',
+    title:'สมรรถนะหลักที่ 1 ด้านความรู้ (Knowledge)',
+    components:[
+      {code:'1.1',title:'ความรู้พื้นฐานด้านมลพิษอากาศและผลกระทบต่อสิ่งแวดล้อม',items:[
+        {num:1,text:'มีความรู้เกี่ยวกับสถานการณ์มลพิษอากาศในปัจจุบันและผลกระทบที่เกี่ยวข้อง'},
+        {num:2,text:'มีความรู้เกี่ยวกับประเภทและแหล่งกำเนิดของมลพิษอากาศ ตลอดจนหลักการป้องกันมลพิษอากาศเบื้องต้น'},
+        {num:3,text:'มีความรู้เกี่ยวกับองค์ประกอบ คุณสมบัติทางกายภาพและทางเคมีของมลพิษอากาศแต่ละประเภท'}
+      ]},
+      {code:'1.2',title:'ความรู้ด้านกฎหมาย มาตรฐาน และการรายงานตามข้อกำหนด',items:[
+        {num:4,text:'มีความรู้เกี่ยวกับกฎหมายและระเบียบด้านสิ่งแวดล้อมที่เกี่ยวข้องกับการจัดการมลพิษของโรงงานอุตสาหกรรม'},
+        {num:5,text:'มีความรู้เกี่ยวกับหลักเกณฑ์การจำแนกชนิดและขนาดของโรงงานตามประกาศกระทรวงอุตสาหกรรม'},
+        {num:6,text:'มีความรู้เกี่ยวกับการจัดทำรายงานการตรวจสอบและควบคุมกำกับดูแลการทำงานของระบบบำบัดมลพิษอากาศ'},
+        {num:7,text:'มีความรู้เกี่ยวกับการจัดทำรายงานผลการวิเคราะห์ปริมาณสารมลพิษอากาศตามหลักเกณฑ์และวิธีการที่กรมโรงงานอุตสาหกรรมกำหนด'}
+      ]},
+      {code:'1.3',title:'ความรู้ด้านกระบวนการผลิตและการวิเคราะห์แหล่งกำเนิดมลพิษ',items:[
+        {num:8,text:'มีความรู้เกี่ยวกับแนวทางการลดมลพิษอากาศตั้งแต่แหล่งกำเนิดในกระบวนการผลิต'},
+        {num:9,text:'มีความรู้เกี่ยวกับผังกระบวนการผลิตและจุดที่มีโอกาสก่อให้เกิดมลพิษอากาศในแต่ละขั้นตอน'},
+        {num:10,text:'มีความรู้เกี่ยวกับการตรวจสอบชนิดและประเภทของเชื้อเพลิงและวัตถุดิบที่ใช้ในกระบวนการผลิตของโรงงาน'},
+        {num:11,text:'มีความรู้เกี่ยวกับความสัมพันธ์ระหว่างการเปลี่ยนแปลงวัตถุดิบหรือเชื้อเพลิงกับปริมาณและชนิดของมลพิษอากาศที่เกิดขึ้น'},
+        {num:12,text:'มีความรู้เกี่ยวกับการประเมินปริมาณการปล่อยมลพิษอากาศจากกระบวนการผลิต (Emission Estimation)'},
+        {num:13,text:'มีความรู้เกี่ยวกับหลักสมดุลมวลสาร สมดุลพลังงาน และสมดุลสารเคมี เพื่อใช้ประเมินแหล่งกำเนิด ปริมาณมลพิษอากาศ และภาระมลพิษที่เข้าสู่ระบบบำบัดมลพิษอากาศของโรงงาน'}
+      ]},
+      {code:'1.4',title:'ความรู้ด้านการจัดการ บำบัด และควบคุมระบบบำบัดมลพิษอากาศ',items:[
+        {num:14,text:'มีความรู้เกี่ยวกับหลักการจัดการ การบำบัด และการควบคุมระบบบำบัดมลพิษอากาศตามมาตรฐานสิ่งแวดล้อม'},
+        {num:15,text:'มีความรู้เกี่ยวกับหลักการบำบัดหรือกำจัดมลพิษอากาศให้เป็นไปตามมาตรฐานที่กำหนด'},
+        {num:16,text:'มีความรู้เกี่ยวกับวิธีการบำบัดมลพิษอากาศทั้งทางกายภาพ ทางเคมี และทางชีวภาพ'},
+        {num:17,text:'มีความรู้เกี่ยวกับหลักการเทคโนโลยีสะอาดและการบริหารจัดการระบบบำบัดมลพิษอากาศ'},
+        {num:18,text:'มีความรู้เกี่ยวกับแนวทางการบริหารจัดการมลพิษอากาศอย่างเป็นระบบและต่อเนื่อง'},
+        {num:19,text:'มีความรู้เกี่ยวกับเทคนิคการควบคุมระบบบำบัดหรือกำจัดมลพิษอากาศ'},
+        {num:20,text:'มีความรู้เกี่ยวกับเครื่องจักรและอุปกรณ์ของระบบบำบัดมลพิษอากาศในโรงงาน'},
+        {num:21,text:'มีความรู้เกี่ยวกับหลักการบำรุงรักษาเชิงป้องกันของเครื่องจักรและอุปกรณ์ในระบบบำบัดมลพิษอากาศ'}
+      ]},
+      {code:'1.5',title:'ความรู้ด้านการประเมินความเสี่ยงและเทคโนโลยีดิจิทัล',items:[
+        {num:22,text:'มีความรู้เกี่ยวกับการประเมินลักษณะของมลพิษอากาศและการตรวจสอบประสิทธิภาพของระบบบำบัดมลพิษอากาศ'},
+        {num:23,text:'มีความรู้เกี่ยวกับการวิเคราะห์และจัดการปัญหาที่เกิดขึ้นกับระบบบำบัดมลพิษอากาศ'},
+        {num:24,text:'มีความรู้เกี่ยวกับการเก็บตัวอย่างและการวิเคราะห์คุณภาพอากาศ'},
+        {num:25,text:'มีความรู้เกี่ยวกับการประเมินและการบริหารจัดการความเสี่ยงด้านมลพิษอากาศในโรงงาน'},
+        {num:26,text:'มีความรู้เกี่ยวกับการประยุกต์ใช้เทคโนโลยีดิจิทัล เช่น อินเทอร์เน็ตของสรรพสิ่ง (IoT) และปัญญาประดิษฐ์ (AI) ในระบบบำบัดมลพิษอากาศ'},
+        {num:27,text:'มีความรู้เกี่ยวกับระบบตรวจวัดมลพิษอากาศ CEMS (Continuous Emission Monitoring System) ของกรมโรงงานอุตสาหกรรม'}
+      ]},
+      {code:'1.6',title:'ความรู้ด้านการวางแผนงานและความปลอดภัย',items:[
+        {num:28,text:'มีความรู้เกี่ยวกับการจัดทำแผนงานและพัฒนาแนวทางแก้ไขปัญหาของระบบบำบัดมลพิษอากาศ'},
+        {num:29,text:'มีความรู้เกี่ยวกับการจัดทำแผนฉุกเฉินและแนวทางตอบโต้เหตุการณ์ผิดปกติของระบบบำบัดมลพิษอากาศ'},
+        {num:30,text:'มีความรู้เกี่ยวกับความปลอดภัย อาชีวอนามัย และสิ่งแวดล้อมที่เกี่ยวข้องกับการปฏิบัติงานของระบบบำบัดมลพิษอากาศ'},
+        {num:31,text:'มีความรู้เกี่ยวกับมาตรฐานความปลอดภัยในการทำงานกับสารเคมีและก๊าซอันตรายที่เกี่ยวข้องกับระบบบำบัดมลพิษอากาศ'}
+      ]}
+    ]
+  },
+  {
+    key:'S',
+    title:'สมรรถนะหลักที่ 2 ด้านทักษะ (Skill)',
+    components:[
+      {code:'2.1',title:'ทักษะด้านการตรวจสอบ วิเคราะห์ และตีความข้อมูล',items:[
+        {num:32,text:'สามารถอ่าน วิเคราะห์ และตีความข้อมูลจากเครื่องมือหรือระบบตรวจวัดมลพิษอากาศได้อย่างถูกต้อง'},
+        {num:33,text:'สามารถเก็บตัวอย่างและวิเคราะห์คุณภาพอากาศได้'},
+        {num:34,text:'สามารถตรวจสอบชนิดและประเภทของเชื้อเพลิงและวัตถุดิบที่ใช้ในกระบวนการผลิตของโรงงานได้'},
+        {num:35,text:'สามารถประเมินลักษณะของมลพิษอากาศ และตรวจสอบประสิทธิภาพของระบบป้องกันและบำบัดมลพิษอากาศของโรงงานได้'}
+      ]},
+      {code:'2.2',title:'ทักษะด้านการวิเคราะห์ปัญหา การแก้ไขระบบ และเทคโนโลยีดิจิทัล',items:[
+        {num:36,text:'สามารถวิเคราะห์กระบวนการผลิตและความคุ้มค่า พร้อมทั้งเสนอแนวทางลดมลพิษอากาศในโรงงานได้'},
+        {num:37,text:'สามารถประยุกต์ใช้หลักการเทคโนโลยีการผลิตที่สะอาด (Cleaner Technology) เพื่อลดปริมาณมลพิษอากาศจากแหล่งกำเนิดในกระบวนการผลิตได้'},
+        {num:38,text:'สามารถวิเคราะห์ปัญหาและให้ข้อเสนอแนะเพื่อแก้ไขหรือปรับปรุงการจัดการระบบบำบัดมลพิษอากาศได้อย่างเหมาะสม'},
+        {num:39,text:'สามารถวิเคราะห์สาเหตุของความผิดปกติของระบบบำบัดมลพิษอากาศ และกำหนดแนวทางแก้ไขได้อย่างเป็นขั้นตอน'},
+        {num:40,text:'สามารถประยุกต์ใช้เทคโนโลยีดิจิทัล เช่น อินเทอร์เน็ตของสรรพสิ่ง (IoT) และปัญญาประดิษฐ์ (AI) ในระบบบำบัดมลพิษอากาศได้'},
+        {num:41,text:'สามารถอ่านค่าแนวโน้ม (Trend) และตรวจสอบสัญญาณเตือน (Alarm) จากระบบดิจิทัลเพื่อคาดการณ์และป้องกันความผิดปกติของระบบล่วงหน้าได้'},
+        {num:42,text:'สามารถวิเคราะห์สาเหตุของความบกพร่องในระบบบำบัดมลพิษอากาศจากข้อมูลการเดินระบบ สภาพเครื่องจักร อุปกรณ์ และกระบวนการผลิต เพื่อกำหนดแนวทางแก้ไขหรือปรับปรุงระบบได้อย่างเหมาะสม'}
+      ]},
+      {code:'2.3',title:'ทักษะด้านการจัดทำรายงานและการวางแผนปฏิบัติงาน',items:[
+        {num:43,text:'สามารถตรวจสอบและลงนามรับรองรายงานในฐานะผู้ควบคุมระบบบำบัดมลพิษอากาศตามที่กฎหมายกำหนดได้'},
+        {num:44,text:'สามารถตรวจสอบและรับรองรายงานผลการวิเคราะห์ปริมาณสารมลพิษอากาศได้'},
+        {num:45,text:'สามารถจัดทำรายงานการตรวจสอบ ควบคุม กำกับ ดูแลการทำงานของระบบบำบัดมลพิษอากาศได้'},
+        {num:46,text:'สามารถจัดทำรายงานผลการวิเคราะห์ปริมาณสารมลพิษอากาศให้เป็นไปตามหลักเกณฑ์และวิธีการที่กรมโรงงานอุตสาหกรรมกำหนดได้'},
+        {num:47,text:'สามารถจัดทำแผนการปฏิบัติงานของระบบบำบัดมลพิษอากาศได้'},
+        {num:48,text:'สามารถวางแผนบำรุงรักษาเชิงป้องกันเครื่องจักรและอุปกรณ์ของระบบบำบัดมลพิษอากาศได้'},
+        {num:49,text:'สามารถวางแผนและจัดสรรทรัพยากรบุคคล งบประมาณ และเวลา สำหรับการดำเนินงานของระบบบำบัดมลพิษอากาศได้'},
+        {num:50,text:'สามารถจัดทำแผนรองรับสถานการณ์ฉุกเฉินของระบบบำบัดมลพิษอากาศได้'}
+      ]},
+      {code:'2.4',title:'ทักษะด้านการถ่ายทอดความรู้และพัฒนาบุคลากร',items:[
+        {num:51,text:'สามารถถ่ายทอดความรู้หรือฝึกอบรมผู้ปฏิบัติงานเกี่ยวกับระบบบำบัดมลพิษอากาศได้'},
+        {num:52,text:'สามารถจัดทำคู่มือปฏิบัติงานสำหรับผู้ปฏิบัติประจำระบบบำบัดมลพิษอากาศได้'},
+        {num:53,text:'สามารถให้คำปรึกษาแนะนำผู้ปฏิบัติงานรุ่นใหม่ในการควบคุมระบบบำบัดมลพิษอากาศได้'}
+      ]}
+    ]
+  },
+  {
+    key:'A',
+    title:'สมรรถนะหลักที่ 3 ด้านคุณลักษณะที่พึงประสงค์ (Attribute)',
+    components:[
+      {code:'3.1',title:'จิตสำนึกความรับผิดชอบและคุณธรรมจรรยาบรรณ',items:[
+        {num:54,text:'มีจิตสำนึกด้านสิ่งแวดล้อมและความปลอดภัยในการปฏิบัติงาน และให้ความสำคัญกับการป้องกันมลพิษอากาศอย่างต่อเนื่อง'},
+        {num:55,text:'มีความรับผิดชอบต่องานที่ได้รับมอบหมายเป็นอย่างดี'},
+        {num:56,text:'มีระเบียบวินัยและปฏิบัติตามกฎระเบียบขององค์กร'},
+        {num:57,text:'มีความรอบคอบในการใช้ข้อมูลและรายงานผลการตรวจวัดโดยยึดหลักความถูกต้องและความโปร่งใส'},
+        {num:58,text:'มีความน่าเชื่อถือและเป็นที่ไว้วางใจ'},
+        {num:59,text:'มีความซื่อสัตย์สุจริตในการปฏิบัติงานที่เกี่ยวข้องกับระบบบำบัดมลพิษอากาศ'},
+        {num:60,text:'มีจรรยาบรรณในการปฏิบัติงานในตำแหน่งผู้ควบคุมระบบบำบัดมลพิษอากาศ'}
+      ]},
+      {code:'3.2',title:'การคิดวิเคราะห์ การแก้ปัญหา และการตัดสินใจ',items:[
+        {num:61,text:'สามารถแก้ไขปัญหาที่เกิดขึ้นในงานได้'},
+        {num:62,text:'มีความละเอียดรอบคอบในการปฏิบัติงานและกระบวนการทำงานโดยรวม'},
+        {num:63,text:'สามารถตัดสินใจภายใต้สถานการณ์ที่ไม่ชัดเจนและซับซ้อนได้'},
+        {num:64,text:'สามารถปฏิบัติงานให้บรรลุผลสัมฤทธิ์ได้'}
+      ]},
+      {code:'3.3',title:'การสื่อสาร การทำงานร่วมกับผู้อื่น และการเรียนรู้ปรับตัว',items:[
+        {num:65,text:'มีภาวะผู้นำที่ดี'},
+        {num:66,text:'มีมนุษยสัมพันธ์ที่ดีและสามารถทำงานร่วมกับเพื่อนร่วมงานได้อย่างราบรื่น'},
+        {num:67,text:'สามารถทำงานร่วมกับผู้อื่นที่มีความคิดเห็นแตกต่างได้อย่างสร้างสรรค์'},
+        {num:68,text:'มีความคิดริเริ่มสร้างสรรค์'},
+        {num:69,text:'มีความพร้อมในการเรียนรู้และปรับตัวต่อเทคโนโลยีใหม่ที่เกี่ยวข้องกับระบบบำบัดมลพิษอากาศ'},
+        {num:70,text:'มีความกล้าคิดและกล้าริเริ่มสิ่งใหม่ที่เป็นประโยชน์ต่อองค์กร'},
+        {num:71,text:'มีความยืดหยุ่นและสามารถปรับตัวต่อสถานการณ์ต่าง ๆ ได้'}
+      ]},
+      {code:'3.4',title:'การบริหารจัดการงานและวิสัยทัศน์ระยะยาว',items:[
+        {num:72,text:'สามารถจัดลำดับความสำคัญของงานได้อย่างเหมาะสม'},
+        {num:73,text:'มีวิสัยทัศน์ในการวางแผนพัฒนาระบบบำบัดมลพิษอากาศให้สอดคล้องกับทิศทางเทคโนโลยีและกฎหมาย'},
+        {num:74,text:'สามารถบริหารจัดการงานในปัจจุบันโดยคำนึงถึงผลกระทบในระยะยาวได้'},
+        {num:75,text:'ให้ความสำคัญกับการพัฒนางานอย่างต่อเนื่องในการปฏิบัติงาน'}
+      ]}
+    ]
+  }
+];
+
+const ITEMS_FLAT = DOMAINS.flatMap(d => d.components.flatMap(c => c.items));
+const TOTAL_ITEMS = ITEMS_FLAT.length;
+
+function renderLikert(num){
+  let html = '<div class="likert-row-wrap"><span class="likert-endcap">น้อยที่สุด</span><div class="likert">';
+  for(let v=1; v<=5; v++){
+    html += `<label class="likert-opt v${v}"><input type="radio" name="q${num}" value="${v}" data-num="${num}"><span class="pill">${v}</span></label>`;
+  }
+  html += '</div><span class="likert-endcap">มากที่สุด</span></div>';
+  return html;
+}
+
+function buildSections(){
+  const container = document.getElementById('sectionsContainer');
+  DOMAINS.forEach((dom, idx)=>{
+    const itemCount = dom.components.reduce((s,c)=>s+c.items.length,0);
+    const details = document.createElement('details');
+    details.className = 'section-acc';
+    details.id = 'sec-' + dom.key;
+    if(idx === 0) details.open = true;
+
+    const summary = document.createElement('summary');
+    summary.innerHTML = `<h2>${dom.title}</h2><span style="display:flex;align-items:center;"><span class="count-pill" id="count-${dom.key}">0/${itemCount}</span><span class="chev">&#9660;</span></span>`;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    dom.components.forEach(comp=>{
+      const compTitle = document.createElement('div');
+      compTitle.className = 'component-title';
+      compTitle.textContent = `องค์ประกอบสมรรถนะที่ ${comp.code} ${comp.title}`;
+      body.appendChild(compTitle);
+
+      comp.items.forEach(item=>{
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML = `
+          <div class="item-header">
+            <span class="badge">${item.num}</span>
+            <p class="item-text">${item.text}</p>
+          </div>
+          ${renderLikert(item.num)}
+        `;
+        body.appendChild(row);
+      });
+    });
+
+    details.appendChild(body);
+    container.appendChild(details);
+  });
+}
+
+function updateProgress(){
+  let answered = 0;
+  const perDomainCount = {};
+  DOMAINS.forEach(d=> perDomainCount[d.key] = 0);
+
+  DOMAINS.forEach(dom=>{
+    dom.components.forEach(comp=>{
+      comp.items.forEach(item=>{
+        const checked = document.querySelector(`input[name="q${item.num}"]:checked`);
+        if(checked){
+          answered++;
+          perDomainCount[dom.key]++;
+        }
+      });
+    });
+  });
+
+  DOMAINS.forEach(dom=>{
+    const itemCount = dom.components.reduce((s,c)=>s+c.items.length,0);
+    const pill = document.getElementById('count-'+dom.key);
+    if(pill) pill.textContent = perDomainCount[dom.key] + '/' + itemCount;
+  });
+
+  const pct = Math.round((answered/TOTAL_ITEMS)*100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `ตอบแล้ว ${answered} / ${TOTAL_ITEMS} ข้อ (${pct}%)`;
+  return answered;
+}
+
+buildSections();
+updateProgress();
+
+document.getElementById('sectionsContainer').addEventListener('change', (e)=>{
+  if(e.target && e.target.type === 'radio'){
+    updateProgress();
+  }
+});
+
+function getRadioVal(name){
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+
+function buildPayload(){
+  const payload = {
+    timestamp_client: new Date().toISOString(),
+    gender: getRadioVal('gender'),
+    age: getRadioVal('age'),
+    edu: getRadioVal('edu'),
+    org_type: getRadioVal('org_type'),
+    org_name: document.getElementById('org_name').value.trim(),
+    exp: getRadioVal('exp'),
+    suggestion: document.getElementById('suggestion').value.trim()
+  };
+  ITEMS_FLAT.forEach(item=>{
+    payload['q'+item.num] = getRadioVal('q'+item.num);
+  });
+  return payload;
+}
+
+function showThankYou(){
+  document.querySelectorAll('main .card, #sectionsContainer').forEach(el=> el.style.display='none');
+  document.querySelector('.submit-bar').style.display='none';
+  document.querySelector('.navbar').style.display='none';
+  document.getElementById('thankyou').style.display='block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('submitBtn').addEventListener('click', ()=>{
+  const answered = updateProgress();
+
+  const requiredPart1 = ['gender','age','edu','org_type','exp'];
+  const missingPart1 = requiredPart1.some(name => !document.querySelector(`input[name="${name}"]:checked`));
+
+  if(missingPart1){
+    alert('กรุณากรอกข้อมูลทั่วไปของผู้ตอบแบบสอบถาม (ส่วนที่ 1) ให้ครบถ้วนก่อนส่งแบบสอบถาม');
+    document.getElementById('part1').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+
+  if(answered < TOTAL_ITEMS){
+    alert(`กรุณาตอบข้อคำถามให้ครบทุกข้อ (ตอบแล้ว ${answered} จาก ${TOTAL_ITEMS} ข้อ)`);
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่งข้อมูล...';
+
+  const payload = buildPayload();
+
+  if(!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf('PASTE_YOUR') === 0){
+    console.warn('GAS_WEB_APP_URL ยังไม่ได้ตั้งค่า: ข้อมูลจะไม่ถูกส่งไปยัง Google Sheet (โหมดทดสอบ)');
+    showThankYou();
+    return;
+  }
+
+  fetch(GAS_WEB_APP_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  })
+  .then(()=> showThankYou())
+  .catch((err)=>{
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'ส่งแบบสอบถาม';
+    alert('ไม่สามารถส่งข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
+  });
+});
+</script>
+
+</body>
+</html>
