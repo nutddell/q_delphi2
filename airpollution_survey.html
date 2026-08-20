@@ -237,6 +237,50 @@
     display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;
   }
 
+  /* Login gate */
+  .login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,var(--green-800) 0%,var(--green-900) 100%);
+    padding:20px;
+  }
+  .login-card{
+    background:#fff;
+    border-radius:16px;
+    padding:36px 32px;
+    max-width:420px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(11,61,36,.35);
+  }
+  .login-kicker{
+    letter-spacing:.12em;font-size:.72rem;text-transform:uppercase;
+    color:var(--green-700);font-weight:700;margin-bottom:10px;
+  }
+  .login-card h1{font-size:1.25rem;color:var(--green-800);margin:0 0 10px;}
+  .login-card p{font-size:.88rem;color:var(--text-soft);margin:0 0 20px;}
+  #loginForm input[type=text]{
+    text-align:center;font-size:1rem;letter-spacing:.03em;padding:12px;margin-bottom:14px;
+  }
+  .login-btn{
+    width:100%;background:var(--green-800);color:#fff;border:none;padding:13px;
+    font-size:1rem;font-weight:700;border-radius:10px;cursor:pointer;font-family:inherit;
+  }
+  .login-btn:hover{background:var(--green-900);}
+  .login-error{
+    display:none;color:var(--danger);font-size:.85rem;margin-top:14px;
+    background:#fdecea;border:1px solid #f5c6c2;border-radius:8px;padding:8px 10px;
+  }
+  .login-error.show{display:block;}
+
+  .expert-badge{
+    max-width:960px;margin:0 auto;padding:10px 16px 0;
+    font-size:.8rem;color:var(--text-soft);text-align:right;
+  }
+  .expert-badge b{color:var(--green-800);}
+
   @media (max-width:600px){
     .likert-opt .pill{width:38px;height:38px;font-size:.88rem;}
     header.hero h1{font-size:1.2rem;}
@@ -245,6 +289,23 @@
 </style>
 </head>
 <body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-kicker">Air Pollution Control Competency Survey</div>
+    <h1>ยืนยันตัวตนผู้เชี่ยวชาญ</h1>
+    <p>กรุณากรอกรหัสผู้เชี่ยวชาญที่ได้รับ (เช่น air01) เพื่อเข้าสู่แบบสอบถามความคิดเห็นระดับความสำคัญของสมรรถนะ</p>
+    <form id="loginForm" autocomplete="off">
+      <input type="text" id="expertCodeInput" name="expertCodeInput" placeholder="กรอกรหัสผู้เชี่ยวชาญ เช่น air01" autocomplete="off">
+      <button type="submit" class="login-btn">เข้าสู่แบบสอบถาม</button>
+      <div class="login-error" id="loginError">รหัสผู้เชี่ยวชาญไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง</div>
+    </form>
+  </div>
+</div>
+
+<div class="survey-app" id="surveyApp" style="display:none;">
+
+<div class="expert-badge" id="expertBadge"></div>
 
 <header class="hero">
   <div class="kicker">Air Pollution Control Competency Survey</div>
@@ -362,10 +423,54 @@
   <div class="ok-icon">&#10003;</div>
   <h2>ขอบพระคุณสำหรับความร่วมมือ</h2>
   <p>ผู้วิจัยขอขอบพระคุณท่านที่กรุณาสละเวลาตอบแบบสอบถามการวิจัยในครั้งนี้ ข้อมูลของท่านมีคุณค่าอย่างยิ่งต่อการพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล</p>
+  <p style="color:var(--text-soft);font-size:.85rem;" id="thankyouExpertCode"></p>
   <p style="color:var(--text-soft);font-size:.85rem;">นายอนุรักษ์ รุ่งเรือง &nbsp;|&nbsp; ผู้วิจัย &nbsp;|&nbsp; anurak.r@ited.kmutnb.ac.th</p>
 </div>
 
+</div><!-- /#surveyApp -->
+
 <script>
+/* ============================================================
+   ล็อกอินด้วยรหัสผู้เชี่ยวชาญ (air01 - air21)
+   ============================================================ */
+const VALID_EXPERT_CODES = Array.from({length:21}, (_, i) => 'air' + String(i+1).padStart(2,'0'));
+const SESSION_KEY = 'airpollution_expert_code';
+let CURRENT_EXPERT_CODE = '';
+
+function normalizeCode(raw){
+  return (raw || '').trim().toLowerCase();
+}
+
+function enterSurvey(code){
+  CURRENT_EXPERT_CODE = code;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('surveyApp').style.display = 'block';
+  document.getElementById('expertBadge').innerHTML = 'รหัสผู้เชี่ยวชาญ: <b>' + code + '</b>';
+  window.scrollTo({top:0});
+}
+
+document.getElementById('loginForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const input = document.getElementById('expertCodeInput');
+  const code = normalizeCode(input.value);
+  const errorBox = document.getElementById('loginError');
+
+  if(VALID_EXPERT_CODES.includes(code)){
+    errorBox.classList.remove('show');
+    sessionStorage.setItem(SESSION_KEY, code);
+    enterSurvey(code);
+  } else {
+    errorBox.classList.add('show');
+  }
+});
+
+(function tryAutoLogin(){
+  const saved = normalizeCode(sessionStorage.getItem(SESSION_KEY));
+  if(VALID_EXPERT_CODES.includes(saved)){
+    enterSurvey(saved);
+  }
+})();
+
 /* ============================================================
    การเชื่อมต่อ Google Sheet ผ่าน Google Apps Script
 
@@ -625,6 +730,7 @@ function getRadioVal(name){
 function buildPayload(){
   const payload = {
     timestamp_client: new Date().toISOString(),
+    expert_code: CURRENT_EXPERT_CODE,
     gender: getRadioVal('gender'),
     age: getRadioVal('age'),
     edu: getRadioVal('edu'),
@@ -643,6 +749,7 @@ function showThankYou(){
   document.querySelectorAll('main .card, #sectionsContainer').forEach(el=> el.style.display='none');
   document.querySelector('.submit-bar').style.display='none';
   document.querySelector('.navbar').style.display='none';
+  document.getElementById('thankyouExpertCode').textContent = 'รหัสผู้เชี่ยวชาญ: ' + CURRENT_EXPERT_CODE;
   document.getElementById('thankyou').style.display='block';
   window.scrollTo({top:0, behavior:'smooth'});
 }

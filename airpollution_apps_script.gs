@@ -8,16 +8,24 @@
  * 4. กด + ข้าง "ไฟล์" เลือก HTML ตั้งชื่อไฟล์ว่า "airpollution_survey"
  *    (ต้องตั้งชื่อนี้เป๊ะ ๆ เพราะ doGet() ด้านล่างอ้างอิงชื่อไฟล์นี้)
  *    แล้ววางเนื้อหาไฟล์ airpollution_survey.html ทั้งหมดลงไป
- * 5. กด Deploy > New deployment > เลือกประเภท "Web app"
+ * 5. *** สำคัญ *** ระบุ SPREADSHEET_ID ด้านล่างนี้ให้ตรงกับ Sheet ที่จะใช้เก็บข้อมูล
+ *    คัดลอกจาก URL ของ Sheet เช่น
+ *    https://docs.google.com/spreadsheets/d/นี่คือSPREADSHEET_ID/edit
+ *    (ถ้าไม่ระบุ สคริปต์จะพยายามใช้ SpreadsheetApp.getActiveSpreadsheet() แทน
+ *    ซึ่งจะหาไม่เจอ/บันทึกข้อมูลไม่ได้ ถ้าโปรเจกต์ Apps Script นี้ไม่ได้ถูกสร้างจาก
+ *    เมนู Extensions > Apps Script ภายในตัว Sheet นั้นโดยตรง — เป็นสาเหตุที่พบบ่อย
+ *    ที่สุดของอาการ "หน้าเว็บรันได้แต่บันทึกข้อมูลไม่ได้")
+ * 6. กด Deploy > New deployment > เลือกประเภท "Web app"
  *    - Execute as: Me
  *    - Who has access: Anyone
- * 6. เปิด Web app URL ที่ได้ ควรเห็นหน้าแบบสอบถามทันที (ไม่ใช่ JSON)
- * 7. ทุกครั้งที่แก้โค้ดนี้หรือแก้ไฟล์ HTML ต้องกด Deploy > Manage deployments
+ * 7. เปิด Web app URL ที่ได้ ควรเห็นหน้าแบบสอบถามทันที (ไม่ใช่ JSON)
+ * 8. ทุกครั้งที่แก้โค้ดนี้หรือแก้ไฟล์ HTML ต้องกด Deploy > Manage deployments
  *    > แก้ไข (ไอคอนดินสอ) > เลือก Version "New version" > Deploy
  *    เพื่ออัปเดต URL เดิมให้ใช้โค้ด/หน้าล่าสุด
  */
 
-const SHEET_NAME = 'Responses';
+const SPREADSHEET_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE'; // จาก URL ของ Google Sheet
+const SHEET_NAME = 'response_r2';
 
 // ข้อความเต็มของแต่ละข้อ (1-75) ใช้สร้างหัวตารางให้อ่านเข้าใจง่ายโดยไม่ต้องเปิดไฟล์แบบสอบถามประกอบ
 const ITEM_LABELS = {
@@ -99,7 +107,7 @@ const ITEM_LABELS = {
 };
 
 function buildHeaderRow() {
-  const header = ['วันเวลาที่บันทึก (Server)', 'วันเวลาที่ส่ง (Client)', 'เพศ', 'อายุ', 'คุณวุฒิการศึกษา', 'ประเภทหน่วยงาน', 'ชื่อหน่วยงาน', 'ประสบการณ์ทำงาน'];
+  const header = ['วันเวลาที่บันทึก (Server)', 'วันเวลาที่ส่ง (Client)', 'รหัสผู้เชี่ยวชาญ', 'เพศ', 'อายุ', 'คุณวุฒิการศึกษา', 'ประเภทหน่วยงาน', 'ชื่อหน่วยงาน', 'ประสบการณ์ทำงาน'];
   for (let i = 1; i <= 75; i++) {
     header.push('ข้อ ' + i + ' - ' + ITEM_LABELS[i]);
   }
@@ -107,8 +115,19 @@ function buildHeaderRow() {
   return header;
 }
 
-function getOrCreateSheet_() {
+function getSpreadsheet_() {
+  if (SPREADSHEET_ID && SPREADSHEET_ID.indexOf('PASTE_YOUR') !== 0) {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error('ไม่พบ Spreadsheet ที่เชื่อมต่อ กรุณาตั้งค่า SPREADSHEET_ID ที่ด้านบนของไฟล์นี้ให้ตรงกับ Sheet ที่ต้องการบันทึกข้อมูล');
+  }
+  return ss;
+}
+
+function getOrCreateSheet_() {
+  const ss = getSpreadsheet_();
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -121,12 +140,21 @@ function getOrCreateSheet_() {
   return sheet;
 }
 
+const VALID_EXPERT_CODES = Array.from({length: 21}, (_, i) => 'air' + String(i + 1).padStart(2, '0'));
+
 function appendResponseRow_(data) {
+  const code = (data.expert_code || '').toString().trim().toLowerCase();
+  if (VALID_EXPERT_CODES.indexOf(code) === -1) {
+    throw new Error('รหัสผู้เชี่ยวชาญไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
+  }
+  data.expert_code = code;
+
   const sheet = getOrCreateSheet_();
 
   const row = [
     new Date(),
     data.timestamp_client || '',
+    data.expert_code || '',
     data.gender || '',
     data.age || '',
     data.edu || '',
