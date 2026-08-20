@@ -1,17 +1,20 @@
 /**
- * Google Apps Script backend for airpollution_survey.html
+ * Google Apps Script backend + page host for airpollution_survey.html
  *
  * วิธีติดตั้ง
  * 1. เปิด Google Sheet ที่จะใช้เก็บข้อมูล (ตั้งชื่อไฟล์ เช่น "airpollution")
  * 2. เมนู Extensions > Apps Script
- * 3. ลบโค้ดเดิมทั้งหมด แล้ววางไฟล์นี้ทั้งหมดแทน
- * 4. กด Deploy > New deployment > เลือกประเภท "Web app"
+ * 3. วางไฟล์นี้ทับไฟล์ code.gs (Code.gs) ทั้งหมด
+ * 4. กด + ข้าง "ไฟล์" เลือก HTML ตั้งชื่อไฟล์ว่า "airpollution_survey"
+ *    (ต้องตั้งชื่อนี้เป๊ะ ๆ เพราะ doGet() ด้านล่างอ้างอิงชื่อไฟล์นี้)
+ *    แล้ววางเนื้อหาไฟล์ airpollution_survey.html ทั้งหมดลงไป
+ * 5. กด Deploy > New deployment > เลือกประเภท "Web app"
  *    - Execute as: Me
  *    - Who has access: Anyone
- * 5. คัดลอก Web app URL ที่ได้ ไปวางแทนที่ GAS_WEB_APP_URL
- *    ในไฟล์ airpollution_survey.html
- * 6. ทุกครั้งที่แก้โค้ดนี้ ต้องกด Deploy > Manage deployments > แก้ไข (ไอคอนดินสอ)
- *    แล้วเลือก Version "New version" เพื่ออัปเดต URL เดิมให้ใช้โค้ดล่าสุด
+ * 6. เปิด Web app URL ที่ได้ ควรเห็นหน้าแบบสอบถามทันที (ไม่ใช่ JSON)
+ * 7. ทุกครั้งที่แก้โค้ดนี้หรือแก้ไฟล์ HTML ต้องกด Deploy > Manage deployments
+ *    > แก้ไข (ไอคอนดินสอ) > เลือก Version "New version" > Deploy
+ *    เพื่ออัปเดต URL เดิมให้ใช้โค้ด/หน้าล่าสุด
  */
 
 const SHEET_NAME = 'Responses';
@@ -118,27 +121,44 @@ function getOrCreateSheet_() {
   return sheet;
 }
 
+function appendResponseRow_(data) {
+  const sheet = getOrCreateSheet_();
+
+  const row = [
+    new Date(),
+    data.timestamp_client || '',
+    data.gender || '',
+    data.age || '',
+    data.edu || '',
+    data.org_type || '',
+    data.org_name || '',
+    data.exp || ''
+  ];
+  for (let i = 1; i <= 75; i++) {
+    row.push(data['q' + i] || '');
+  }
+  row.push(data.suggestion || '');
+
+  sheet.appendRow(row);
+}
+
+/**
+ * เรียกจากฝั่งหน้าเว็บผ่าน google.script.run เมื่อหน้า airpollution_survey.html
+ * ถูก serve โดย Apps Script โดยตรง (วิธีที่แนะนำ ไม่ติดปัญหา CORS)
+ */
+function submitAirpollutionResponse(data) {
+  appendResponseRow_(data);
+  return { status: 'success' };
+}
+
+/**
+ * เผื่อกรณีนำ airpollution_survey.html ไปโฮสต์แยกที่อื่น (เช่น GitHub Pages)
+ * แล้วยิง fetch() เข้ามาที่ Web app URL นี้โดยตรงแทน google.script.run
+ */
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
-    const sheet = getOrCreateSheet_();
-
-    const row = [
-      new Date(),
-      data.timestamp_client || '',
-      data.gender || '',
-      data.age || '',
-      data.edu || '',
-      data.org_type || '',
-      data.org_name || '',
-      data.exp || ''
-    ];
-    for (let i = 1; i <= 75; i++) {
-      row.push(data['q' + i] || '');
-    }
-    row.push(data.suggestion || '');
-
-    sheet.appendRow(row);
+    appendResponseRow_(data);
 
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'success' }))
@@ -150,8 +170,23 @@ function doPost(e) {
   }
 }
 
+/**
+ * เปิด Web app URL ตรง ๆ -> ให้ serve หน้า airpollution_survey.html เลย
+ * รองรับ query param ?page=xxx เผื่ออยากต่อยอด serve หน้าอื่นในโปรเจกต์เดียวกัน
+ * เช่น ?page=delphi2 -> delphi_round2_survey.html, ?page=home -> index.html
+ */
 function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', message: 'airpollution survey endpoint is running' }))
-    .setMimeType(ContentService.MimeType.JSON);
+  const pageMap = {
+    'airpollution': 'airpollution_survey',
+    'delphi2': 'delphi_round2_survey',
+    'home': 'index'
+  };
+  const requested = (e && e.parameter && e.parameter.page) || 'airpollution';
+  const fileName = pageMap[requested] || 'airpollution_survey';
+
+  return HtmlService
+    .createHtmlOutputFromFile(fileName)
+    .setTitle('แบบสอบถามความคิดเห็น สมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศ')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

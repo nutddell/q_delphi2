@@ -367,15 +367,40 @@
 
 <script>
 /* ============================================================
-   ตั้งค่าการเชื่อมต่อ Google Sheet ผ่าน Google Apps Script Web App
-   1. สร้าง Google Sheet ใหม่ (เช่น ตั้งชื่อไฟล์ว่า "airpollution")
-   2. เปิด Extensions > Apps Script แล้ววางโค้ดจากไฟล์ airpollution_apps_script.gs
-   3. Deploy > New deployment > เลือกประเภท "Web app"
-      - Execute as: Me
-      - Who has access: Anyone
-   4. คัดลอก Web App URL ที่ได้มาวางแทนที่ค่าด้านล่างนี้
+   การเชื่อมต่อ Google Sheet ผ่าน Google Apps Script
+
+   วิธีที่แนะนำ: เพิ่มไฟล์ HTML นี้เข้าไปในโปรเจกต์ Apps Script เดียวกับ
+   airpollution_apps_script.gs (ตั้งชื่อไฟล์ว่า "airpollution_survey")
+   แล้ว Deploy เป็น Web app — เมื่อเปิดผ่าน Web app URL หน้านี้จะเรียกใช้
+   google.script.run โดยอัตโนมัติ (ไม่ติดปัญหา CORS ไม่ต้องตั้งค่าอะไรเพิ่ม)
+
+   วิธีสำรอง: ถ้านำไฟล์นี้ไปโฮสต์แยกที่อื่น (เช่น GitHub Pages) ให้ใส่
+   Web app URL ของ airpollution_apps_script.gs ไว้ในค่าด้านล่างนี้แทน
    ============================================================ */
 const GAS_WEB_APP_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+function submitToBackend(payload){
+  return new Promise((resolve, reject)=>{
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .submitAirpollutionResponse(payload);
+      return;
+    }
+    if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.indexOf('PASTE_YOUR') !== 0) {
+      fetch(GAS_WEB_APP_URL, {
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload)
+      }).then(resolve).catch(reject);
+      return;
+    }
+    console.warn('ยังไม่ได้เชื่อมต่อ backend ใด ๆ (โหมดทดสอบ): ข้อมูลจะไม่ถูกบันทึก');
+    resolve();
+  });
+}
 
 const DOMAINS = [
   {
@@ -645,25 +670,14 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
 
   const payload = buildPayload();
 
-  if(!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf('PASTE_YOUR') === 0){
-    console.warn('GAS_WEB_APP_URL ยังไม่ได้ตั้งค่า: ข้อมูลจะไม่ถูกส่งไปยัง Google Sheet (โหมดทดสอบ)');
-    showThankYou();
-    return;
-  }
-
-  fetch(GAS_WEB_APP_URL, {
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify(payload)
-  })
-  .then(()=> showThankYou())
-  .catch((err)=>{
-    console.error(err);
-    btn.disabled = false;
-    btn.textContent = 'ส่งแบบสอบถาม';
-    alert('ไม่สามารถส่งข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
-  });
+  submitToBackend(payload)
+    .then(()=> showThankYou())
+    .catch((err)=>{
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = 'ส่งแบบสอบถาม';
+      alert('ไม่สามารถส่งข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
+    });
 });
 </script>
 
