@@ -132,10 +132,32 @@
   }
   .p-explain b{color:var(--own-color);}
 
-  .p-scale{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  /* Slider graph — same visual language as Round3.html's reference box */
+  .p-slider{margin:8px 2px 4px;}
+  .p-slider-track{
+    position:relative;height:8px;background:var(--border);border-radius:999px;
+    margin:14px 6px 6px;
+  }
+  .p-slider-range{position:absolute;top:0;height:100%;background:var(--accent);opacity:.45;border-radius:999px;}
+  .p-slider-median,.p-slider-own{
+    position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  .p-slider-median{background:var(--navy);border:2px solid #fff;z-index:2;}
+  .p-slider-own{background:#fff;border:3px solid var(--own-color);z-index:3;}
+  .p-slider-ticks{display:flex;justify-content:space-between;margin:0 -3px;font-size:.68rem;color:var(--text-soft);}
+  .p-slider-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:.68rem;color:var(--text-soft);}
+  .p-slider-legend .legend-item{display:flex;align-items:center;gap:4px;}
+  .p-legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .p-legend-dot.median{background:var(--navy);}
+  .p-legend-dot.own{background:#fff;border:2px solid var(--own-color);}
+  .p-legend-bar{width:14px;height:5px;border-radius:999px;background:var(--accent);opacity:.45;display:inline-block;}
+
+  .p-scale{display:flex;align-items:center;gap:8px;margin-top:10px;}
   .p-endcap{font-size:.66rem;color:var(--text-soft);width:56px;flex:0 0 auto;}
   .p-endcap.right{text-align:right;}
   .p-circles{display:flex;flex:1;justify-content:space-between;gap:6px;}
+  .p-circle-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;}
   .p-circle{
     width:30px;height:30px;border-radius:50%;
     border:2px solid currentColor;
@@ -147,6 +169,11 @@
   .p-circle.level-3{color:#a3860a;}
   .p-circle.level-4{color:#4c8a2c;}
   .p-circle.level-5{color:#1e5b2f;}
+  .p-circle.is-own{
+    border-width:3px;
+    box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--own-color);
+  }
+  .p-own-tag{font-size:.6rem;color:var(--own-color);font-weight:700;white-space:nowrap;}
 
   .p-suggestion{
     border:1px dashed var(--border);border-radius:8px;
@@ -161,6 +188,9 @@
     .p-page{border:none;border-radius:0;max-width:none;padding:0;margin:0;}
     .p-circle{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .p-ref span{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .p-slider-range,.p-slider-median,.p-slider-own,.p-legend-dot,.p-legend-bar{
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    }
     @page{size:A4 portrait;margin:15mm 14mm;}
   }
 </style>
@@ -250,6 +280,11 @@ function fmt(n){
   return (n === null || n === undefined) ? '—' : n.toFixed(2);
 }
 
+function scalePct(value){
+  // Maps a 1-5 scale value onto a 0%-100% horizontal position.
+  return ((value - 1) / 4) * 100;
+}
+
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str;
@@ -283,8 +318,9 @@ function renderPrintable(data){
       const row = document.createElement('div');
       row.className = 'p-item level-' + item.level;
 
-      const hasOwn = item.ownAnswer !== undefined && item.ownAnswer !== null && item.ownAnswer !== '';
-      const refParts = [`<span class="own">คำตอบเดิม (รอบ 2): <b>${hasOwn ? item.ownAnswer : 'ไม่มีข้อมูล'}</b></span>`];
+      const ownNum = parseFloat(item.ownAnswer);
+      const hasOwn = item.ownAnswer !== undefined && item.ownAnswer !== null && item.ownAnswer !== '' && !isNaN(ownNum);
+      const refParts = [`<span class="own">คำตอบเดิม (รอบ 2): <b>${hasOwn ? ownNum : 'ไม่มีข้อมูล'}</b></span>`];
       if (item.n) {
         refParts.push(`<span class="median">Median <b>${fmt(item.median)}</b></span>`);
         refParts.push(`<span class="iqr">IQR <b>${fmt(item.iqr)}</b></span>`);
@@ -293,6 +329,36 @@ function renderPrintable(data){
         refParts.push('<span class="muted">ยังไม่มีข้อมูลกลุ่มเพียงพอ</span>');
       }
 
+      let sliderHtml = '';
+      if (item.n) {
+        const rangeLeft = scalePct(item.q1);
+        const rangeWidth = scalePct(item.q3) - rangeLeft;
+        const medianLeft = scalePct(item.median);
+        const ownLeft = hasOwn ? scalePct(ownNum) : null;
+        sliderHtml = `
+          <div class="p-slider">
+            <div class="p-slider-track">
+              <div class="p-slider-range" style="left:${rangeLeft}%;width:${rangeWidth}%;"></div>
+              <div class="p-slider-median" style="left:${medianLeft}%;" title="Median ${fmt(item.median)}"></div>
+              ${hasOwn ? `<div class="p-slider-own" style="left:${ownLeft}%;" title="คำตอบเดิม ${ownNum}"></div>` : ''}
+            </div>
+            <div class="p-slider-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+          </div>
+          <div class="p-slider-legend">
+            <span class="legend-item"><i class="p-legend-dot median"></i>Median</span>
+            <span class="legend-item"><i class="p-legend-dot own"></i>คำตอบเดิม</span>
+            <span class="legend-item"><i class="p-legend-bar"></i>Q1–Q3</span>
+          </div>
+        `;
+      }
+
+      const circles = [1,2,3,4,5].map(v => `
+        <div class="p-circle-col">
+          <div class="p-circle level-${v}${hasOwn && Math.round(ownNum) === v ? ' is-own' : ''}">${v}</div>
+          ${hasOwn && Math.round(ownNum) === v ? '<span class="p-own-tag">เดิม</span>' : ''}
+        </div>
+      `).join('');
+
       row.innerHTML = `
         <div class="p-item-header">
           <span class="p-badge">${item.code}</span>
@@ -300,15 +366,10 @@ function renderPrintable(data){
         </div>
         <div class="p-ref">${refParts.join('')}</div>
         ${item.explain ? `<div class="p-explain"><b>หมายเหตุ:</b> ${escapeHtml(item.explain)}</div>` : ''}
+        ${sliderHtml}
         <div class="p-scale">
           <span class="p-endcap">น้อยที่สุด</span>
-          <div class="p-circles">
-            <div class="p-circle level-1">1</div>
-            <div class="p-circle level-2">2</div>
-            <div class="p-circle level-3">3</div>
-            <div class="p-circle level-4">4</div>
-            <div class="p-circle level-5">5</div>
-          </div>
+          <div class="p-circles">${circles}</div>
           <span class="p-endcap right">มากที่สุด</span>
         </div>
       `;
