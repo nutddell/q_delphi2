@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>พิมพ์แบบสอบถามรอบที่ 3</title>
+<style>
+  :root{
+    --navy:#123a5c;
+    --navy-dark:#0b2740;
+    --accent:#b8860b;
+    --accent-soft:#f4e9d8;
+    --bg:#f5f7f9;
+    --card:#ffffff;
+    --border:#dbe3ea;
+    --text:#1f2937;
+    --text-soft:#5b6b7a;
+    --sub-bg:#f8fafc;
+    --own-color:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sarabun','Leelawadee UI','Segoe UI',Tahoma,Arial,sans-serif;
+    line-height:1.6;
+  }
+
+  /* --- On-screen gate / toolbar (hidden when printing) --- */
+  .no-print{}
+  header.hero{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);
+    color:#fff;
+    padding:28px 20px 22px;
+    text-align:center;
+  }
+  header.hero .kicker{
+    letter-spacing:.12em;font-size:.76rem;text-transform:uppercase;
+    color:var(--accent-soft);opacity:.85;margin-bottom:6px;
+  }
+  header.hero h1{font-size:1.25rem;margin:0;font-weight:700;}
+
+  .gate-wrap{max-width:1000px;margin:0 auto;padding:20px 16px 40px;}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(18,58,92,.05);
+  }
+  .card h2{font-size:1.05rem;color:var(--navy);margin:0 0 10px;}
+  .instructions{font-size:.88rem;color:var(--text-soft);}
+  .field{margin:12px 0;}
+  .field label{display:block;font-weight:700;color:var(--navy);margin-bottom:6px;font-size:.88rem;}
+  .field input{
+    width:100%;max-width:260px;padding:9px 12px;border:1px solid var(--border);
+    border-radius:8px;font-family:inherit;font-size:.9rem;
+  }
+  .gate-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+  button.btn{
+    background:var(--navy);color:#fff;border:none;padding:10px 24px;
+    font-size:.88rem;font-weight:700;border-radius:999px;cursor:pointer;font-family:inherit;
+  }
+  button.btn:hover{background:var(--navy-dark);}
+  button.btn:disabled{opacity:.6;cursor:not-allowed;}
+  button.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  button.btn.secondary:hover{background:var(--sub-bg);}
+  .error-banner{
+    display:none;margin-top:12px;padding:10px 14px;border-radius:8px;
+    background:#fdecea;border:1px solid #f5c2bd;color:#8b2b22;font-size:.85rem;
+  }
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    margin-bottom:16px;
+  }
+  .toolbar .meta{font-size:.82rem;color:var(--text-soft);}
+
+  /* --- Printable document --- */
+  #printSheet{display:none;}
+  .p-page{
+    max-width:800px;margin:0 auto;background:#fff;
+    border:1px solid var(--border);border-radius:10px;
+    padding:26px 30px 40px;
+  }
+  .p-header{text-align:center;margin-bottom:18px;}
+  .p-header .p-kicker{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-soft);}
+  .p-header h1{font-size:1.15rem;color:var(--navy);margin:4px 0;}
+  .p-header p{font-size:.82rem;color:var(--text-soft);margin:2px 0;}
+  .p-meta-row{
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    padding:8px 0;margin:14px 0;font-size:.84rem;
+  }
+  .p-meta-row b{color:var(--navy);}
+  .p-instructions{
+    background:var(--sub-bg);border-left:3px solid var(--accent);
+    padding:8px 12px;border-radius:6px;font-size:.82rem;color:var(--text-soft);
+    margin-bottom:16px;
+  }
+  .p-section-title{
+    font-size:.98rem;color:var(--navy);font-weight:700;
+    margin:18px 0 4px;padding-bottom:4px;border-bottom:2px solid var(--navy);
+    break-after:avoid;page-break-after:avoid;
+  }
+  .p-item{
+    border-top:1px dashed var(--border);
+    padding:10px 0;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .p-item:first-child{border-top:none;}
+  .p-item-header{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;}
+  .p-badge{
+    flex:0 0 auto;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:6px;
+    color:#fff;background:var(--navy);margin-top:2px;
+  }
+  .p-item.level-sub .p-badge{background:#6b7f92;}
+  .p-text{margin:0;font-size:.86rem;}
+  .p-item.level-sub .p-text{font-size:.82rem;color:var(--text-soft);}
+
+  .p-ref{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0;font-size:.74rem;}
+  .p-ref span{
+    border-radius:6px;padding:2px 8px;border:1px solid var(--border);background:var(--sub-bg);
+  }
+  .p-ref .own{color:var(--own-color);border-color:#f3c6bd;background:#fdecea;}
+  .p-ref .median{color:var(--navy);border-color:#cddced;background:#eaf1f8;}
+  .p-ref .iqr{color:var(--accent);border-color:#f0dba8;background:#fdf3e0;}
+  .p-ref .pass{color:#1e5b2f;border-color:#b7dfc2;background:#e6f4ea;}
+  .p-ref .fail{color:#8b2b22;border-color:#f3c6bd;background:#fdecea;}
+  .p-ref .muted{font-style:italic;color:var(--text-soft);}
+
+  .p-explain{
+    margin:6px 0;padding:6px 10px;border:1px solid var(--own-color);border-radius:6px;
+    font-size:.78rem;background:#fff;
+  }
+  .p-explain b{color:var(--own-color);}
+
+  .p-scale{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .p-endcap{font-size:.66rem;color:var(--text-soft);width:56px;flex:0 0 auto;}
+  .p-endcap.right{text-align:right;}
+  .p-circles{display:flex;flex:1;justify-content:space-between;gap:6px;}
+  .p-circle{
+    width:30px;height:30px;border-radius:50%;
+    border:2px solid currentColor;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.82rem;font-weight:700;
+  }
+  .p-circle.level-1{color:#c0392b;}
+  .p-circle.level-2{color:#c9701f;}
+  .p-circle.level-3{color:#a3860a;}
+  .p-circle.level-4{color:#4c8a2c;}
+  .p-circle.level-5{color:#1e5b2f;}
+
+  .p-suggestion{
+    border:1px dashed var(--border);border-radius:8px;
+    height:90px;margin-top:8px;
+  }
+  .p-footer{margin-top:20px;font-size:.76rem;color:var(--text-soft);text-align:center;}
+
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff;}
+    #printSheet{display:block !important;}
+    .p-page{border:none;border-radius:0;max-width:none;padding:0;margin:0;}
+    .p-circle{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .p-ref span{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    @page{size:A4 portrait;margin:15mm 14mm;}
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" id="gateWrap">
+  <header class="hero">
+    <div class="kicker">Delphi Technique · Round 3</div>
+    <h1>พิมพ์แบบสอบถามรอบที่ 3 (สำหรับผู้ตอบที่ไม่สะดวกใช้เว็บแอป)</h1>
+  </header>
+
+  <div class="gate-wrap">
+    <div class="card" id="loginCard">
+      <h2>สร้างแบบฟอร์มสำหรับพิมพ์</h2>
+      <p class="instructions">
+        หน้านี้สำหรับผู้วิจัยเท่านั้น ใช้สร้างแบบสอบถามรอบที่ 3 ฉบับพิมพ์ (A4 แนวตั้ง) สำหรับผู้เชี่ยวชาญรายบุคคล
+        โดยจะดึงคำตอบเดิมของรอบที่ 2 และค่ามัธยฐาน/IQR ของกลุ่มมาแสดงในกระดาษให้เหมือนกับหน้าเว็บ
+        กรอกรหัสผ่านผู้ดูแลระบบและรหัสผู้เชี่ยวชาญที่ต้องการพิมพ์ แล้วกด "สร้างแบบฟอร์ม"
+      </p>
+      <div class="field">
+        <label for="accessKey">รหัสผ่านผู้ดูแลระบบ</label>
+        <input type="password" id="accessKey" placeholder="รหัสผ่านผู้ดูแลระบบ" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="targetUsername">รหัสผู้เชี่ยวชาญ (username)</label>
+        <input type="text" id="targetUsername" placeholder="เช่น res01" autocomplete="off" maxlength="5">
+      </div>
+      <div class="gate-actions">
+        <button class="btn" id="loadBtn" type="button">สร้างแบบฟอร์ม</button>
+      </div>
+      <div class="error-banner" id="gateError"></div>
+    </div>
+
+    <div class="toolbar" id="resultToolbar" style="display:none;">
+      <div class="meta" id="resultMeta"></div>
+      <div>
+        <button class="btn secondary" id="backBtn" type="button">สร้างฉบับอื่น</button>
+        <button class="btn" id="printBtn" type="button">พิมพ์ / บันทึกเป็น PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="printSheet">
+  <div class="p-page">
+    <div class="p-header">
+      <div class="p-kicker">Delphi Technique · Round 3</div>
+      <h1>แบบสอบถามความคิดเห็นผู้เชี่ยวชาญ (เทคนิคเดลฟาย รอบที่ 3)</h1>
+      <p>เรื่อง การพัฒนารูปแบบการบริหารระบบโลจิสติกส์และห่วงโซ่อุปทานของโรงงานคัดแยกขยะชุมชนในยุคดิจิทัล</p>
+      <p>วิจัยโดย ว่าที่ ร.ต. วิญญู ธรรมมา &nbsp;|&nbsp; มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
+    </div>
+
+    <div class="p-meta-row">
+      <span>รหัสผู้เชี่ยวชาญ: <b id="metaUsername">-</b></span>
+      <span>วันที่พิมพ์: <b id="metaDate">-</b></span>
+    </div>
+
+    <div class="p-instructions">
+      กรุณาพิจารณาข้อคำถามแต่ละข้อ พร้อมข้อมูลอ้างอิงที่แสดงไว้ (คำตอบเดิมของท่านในรอบที่ 2, มัธยฐาน
+      และ IQR ของกลุ่มผู้เชี่ยวชาญ) แล้ว<b>วงกลมล้อมรอบตัวเลข 1–5</b> ที่ตรงกับความคิดเห็นของท่านมากที่สุด
+      ในรอบนี้ (จะวงกลมตัวเลขเดิม หรือเปลี่ยนใหม่ก็ได้) ระดับ 5 = เห็นด้วย/สำคัญมากที่สุด, ระดับ 1 = น้อยที่สุด
+    </div>
+
+    <div id="printSections"></div>
+
+    <div class="p-item" style="border-top:2px solid var(--border);margin-top:10px;">
+      <p class="p-text"><b>ส่วนที่ 3 ข้อคิดเห็นและข้อเสนอแนะเพิ่มเติม</b> (ถ้ามี)</p>
+      <div class="p-suggestion"></div>
+    </div>
+
+    <div class="p-footer">ขอบพระคุณสำหรับความร่วมมือ &nbsp;|&nbsp; ว่าที่ ร.ต. วิญญู ธรรมมา ผู้วิจัย</div>
+  </div>
+</div>
+
+<script>
+function showGateError(msg){
+  const el = document.getElementById('gateError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideGateError(){
+  document.getElementById('gateError').style.display = 'none';
+}
+
+function fmt(n){
+  return (n === null || n === undefined) ? '—' : n.toFixed(2);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderPrintable(data){
+  document.getElementById('metaUsername').textContent = data.username;
+  document.getElementById('metaDate').textContent = new Date(data.generatedAt).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+
+  const bySection = [];
+  const indexOf = {};
+  data.items.forEach(item => {
+    if (!(item.sectionKey in indexOf)) {
+      indexOf[item.sectionKey] = bySection.length;
+      bySection.push({ key: item.sectionKey, title: item.sectionTitle, items: [] });
+    }
+    bySection[indexOf[item.sectionKey]].items.push(item);
+  });
+
+  const container = document.getElementById('printSections');
+  container.innerHTML = '';
+
+  bySection.forEach(sec => {
+    const title = document.createElement('div');
+    title.className = 'p-section-title';
+    title.textContent = sec.title;
+    container.appendChild(title);
+
+    sec.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'p-item level-' + item.level;
+
+      const hasOwn = item.ownAnswer !== undefined && item.ownAnswer !== null && item.ownAnswer !== '';
+      const refParts = [`<span class="own">คำตอบเดิม (รอบ 2): <b>${hasOwn ? item.ownAnswer : 'ไม่มีข้อมูล'}</b></span>`];
+      if (item.n) {
+        refParts.push(`<span class="median">Median <b>${fmt(item.median)}</b></span>`);
+        refParts.push(`<span class="iqr">IQR <b>${fmt(item.iqr)}</b></span>`);
+        refParts.push(`<span class="${item.pass ? 'pass' : 'fail'}">${item.pass ? '✓ ผ่านฉันทามติ' : 'ยังไม่ถึงฉันทามติ'}</span>`);
+      } else {
+        refParts.push('<span class="muted">ยังไม่มีข้อมูลกลุ่มเพียงพอ</span>');
+      }
+
+      row.innerHTML = `
+        <div class="p-item-header">
+          <span class="p-badge">${item.code}</span>
+          <p class="p-text">${item.text}</p>
+        </div>
+        <div class="p-ref">${refParts.join('')}</div>
+        ${item.explain ? `<div class="p-explain"><b>หมายเหตุ:</b> ${escapeHtml(item.explain)}</div>` : ''}
+        <div class="p-scale">
+          <span class="p-endcap">น้อยที่สุด</span>
+          <div class="p-circles">
+            <div class="p-circle level-1">1</div>
+            <div class="p-circle level-2">2</div>
+            <div class="p-circle level-3">3</div>
+            <div class="p-circle level-4">4</div>
+            <div class="p-circle level-5">5</div>
+          </div>
+          <span class="p-endcap right">มากที่สุด</span>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  });
+
+  document.getElementById('printSheet').style.display = 'block';
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('resultToolbar').style.display = 'flex';
+  document.getElementById('resultMeta').textContent =
+    `พร้อมพิมพ์: รหัส ${data.username} (${data.items.length} ข้อ) — เลื่อนลงไปดูตัวอย่างก่อนกดพิมพ์ได้`;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('loadBtn').addEventListener('click', ()=>{
+  const key = document.getElementById('accessKey').value;
+  const username = document.getElementById('targetUsername').value.trim().toLowerCase();
+  hideGateError();
+
+  if(!/^res(0[1-9]|1[0-9]|2[01])$/.test(username)){
+    showGateError('กรุณาระบุรหัสผู้เชี่ยวชาญให้ถูกต้องในรูปแบบ res01 ถึง res21');
+    return;
+  }
+
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังโหลด...';
+
+  google.script.run
+    .withSuccessHandler((data)=>{
+      btn.disabled = false;
+      btn.textContent = 'สร้างแบบฟอร์ม';
+      renderPrintable(data);
+    })
+    .withFailureHandler((err)=>{
+      btn.disabled = false;
+      btn.textContent = 'สร้างแบบฟอร์ม';
+      showGateError('สร้างแบบฟอร์มไม่สำเร็จ: ' + (err && err.message ? err.message : err));
+    })
+    .getPrintRound3Data(key, username);
+});
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  document.getElementById('printSheet').style.display = 'none';
+  document.getElementById('loginCard').style.display = 'block';
+  document.getElementById('resultToolbar').style.display = 'none';
+});
+
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  window.print();
+});
+</script>
+
+</body>
+</html>

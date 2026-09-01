@@ -47,6 +47,13 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
+  if (page === 'printround3') {
+    return HtmlService.createHtmlOutputFromFile('PrintRound3')
+      .setTitle('พิมพ์แบบสอบถามรอบที่ 3')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
   seedQuestionReferenceIfEmpty_();
 
   var template = HtmlService.createTemplateFromFile('Index');
@@ -199,6 +206,36 @@ function checkRespondentStatus(username) {
 }
 
 /**
+ * Reads a researcher-maintained "explain" column (added by hand next to
+ * the auto-generated statistics columns in a สรุปผลสถิติ sheet) and
+ * returns { itemCode: explanationText }. Returns {} if that sheet or
+ * column doesn't exist yet, or has no รหัสข้อ column to match against.
+ */
+function getExplanationMap_(sheetName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return {};
+
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return {};
+
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var explainCol = headers.indexOf('explain');
+  var codeCol = headers.indexOf('รหัสข้อ');
+  if (explainCol === -1 || codeCol === -1) return {};
+
+  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var map = {};
+  data.forEach(function (row) {
+    var code = row[codeCol];
+    var explain = row[explainCol];
+    if (code && explain) map[code] = String(explain).trim();
+  });
+  return map;
+}
+
+/**
  * Round 3 login step: blocks a respondent who already submitted round 3
  * the same way checkRespondentStatus does for round 2, but otherwise
  * returns their own round-2 answers plus the round-2 group median/IQR
@@ -220,13 +257,17 @@ function checkRound3Status(username) {
   var r2Sheet = getSheet_();
   var ownAnswers = getOwnAnswersMap_(r2Sheet, normalized);
   var r2Stats = computeStatisticsForSheet_(r2Sheet);
+  var explainMap = getExplanationMap_(STAT_SHEET_NAME);
   var groupStats = {};
   r2Stats.items.forEach(function (item) {
     groupStats[item.code] = {
       n: item.n,
       median: item.median,
+      q1: item.q1,
+      q3: item.q3,
       iqr: item.iqr,
-      pass: item.pass
+      pass: item.pass,
+      explain: explainMap[item.code] || ''
     };
   });
 
@@ -234,6 +275,50 @@ function checkRound3Status(username) {
     alreadySubmitted: false,
     ownAnswers: ownAnswers,
     groupStats: groupStats
+  };
+}
+
+/**
+ * Called from PrintRound3.html after the researcher enters the admin
+ * passcode and a respondent's username: builds the same per-item data
+ * checkRound3Status would (own round-2 answer, round-2 group median/
+ * Q1/Q3/IQR/pass, and the researcher's "explain" note if any) as a flat
+ * list ready to lay out on a printable A4 page — for the respondents
+ * who'd rather mark a paper form by hand than use the web app.
+ * Requires STAT_ACCESS_KEY since it exposes one respondent's own answers
+ * plus the group's aggregate stats, same sensitivity as the Stat pages.
+ */
+function getPrintRound3Data(key, username) {
+  checkStatAccess_(key);
+  var normalized = normalizeUsername_(username);
+
+  var r2Sheet = getSheet_();
+  var ownAnswers = getOwnAnswersMap_(r2Sheet, normalized);
+  var r2Stats = computeStatisticsForSheet_(r2Sheet);
+  var explainMap = getExplanationMap_(STAT_SHEET_NAME);
+
+  var items = r2Stats.items.map(function (item) {
+    return {
+      code: item.code,
+      level: item.level,
+      sectionKey: item.sectionKey,
+      sectionTitle: item.sectionTitle,
+      text: item.text,
+      n: item.n,
+      median: item.median,
+      q1: item.q1,
+      q3: item.q3,
+      iqr: item.iqr,
+      pass: item.pass,
+      explain: explainMap[item.code] || '',
+      ownAnswer: Object.prototype.hasOwnProperty.call(ownAnswers, item.code) ? ownAnswers[item.code] : ''
+    };
+  });
+
+  return {
+    username: normalized,
+    items: items,
+    generatedAt: new Date().toISOString()
   };
 }
 
@@ -482,23 +567,47 @@ function getStatisticsR3(key) {
   return computeStatisticsR3_();
 }
 
+var STAT_FIXED_COLS = 12; // ลำดับ..ผลการพิจารณา, in that order (see below)
+
 /**
  * Shared snapshot-writer used by both saveStatisticsToSheet() and
  * saveStatisticsR3ToSheet(): overwrites the given sheet tab with the
- * current statistics table.
+ * current statistics table. Any columns the researcher added by hand
+ * beyond the fixed statistics columns (e.g. an "explain" column of
+ * per-item notes) are read back out and re-applied after the rewrite,
+ * matched by รหัสข้อ, so re-saving stats never wipes them out.
  */
 function writeStatSnapshot_(sheetName, stats) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) sheet = ss.insertSheet(sheetName);
+
+  var extraHeaders = [];
+  var preservedByCode = {};
+  var oldLastRow = sheet.getLastRow();
+  var oldLastCol = sheet.getLastColumn();
+  if (oldLastRow > 0 && oldLastCol > STAT_FIXED_COLS) {
+    var oldHeaderRow = sheet.getRange(1, 1, 1, oldLastCol).getValues()[0];
+    extraHeaders = oldHeaderRow.slice(STAT_FIXED_COLS);
+    if (oldLastRow > 1) {
+      var oldData = sheet.getRange(2, 1, oldLastRow - 1, oldLastCol).getValues();
+      oldData.forEach(function (row) {
+        var code = row[1]; // รหัสข้อ column
+        if (code) preservedByCode[code] = row.slice(STAT_FIXED_COLS);
+      });
+    }
+  }
+
   sheet.clearContents();
 
   var rows = [[
     'ลำดับ', 'รหัสข้อ', 'หมวด/ด้าน', 'ระดับ', 'รายการข้อคำถาม',
     'จำนวนผู้ตอบ (n)', 'มัธยฐาน (Median)', 'Q1', 'Q3', 'IQR (Q3-Q1)',
     'ค่าเฉลี่ย (Mean)', 'ผลการพิจารณา'
-  ]];
+  ].concat(extraHeaders)];
+
   stats.items.forEach(function (item, idx) {
+    var extra = preservedByCode[item.code] || extraHeaders.map(function () { return ''; });
     rows.push([
       idx + 1,
       item.code,
@@ -512,7 +621,7 @@ function writeStatSnapshot_(sheetName, stats) {
       item.iqr,
       item.mean,
       item.pass ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์'
-    ]);
+    ].concat(extra));
   });
 
   sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);

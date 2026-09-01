@@ -297,6 +297,18 @@
   .ref-pill.pass{background:#e6f4ea;color:#1e5b2f;}
   .ref-pill.fail{background:#fdecea;color:#8b2b22;}
 
+  .ref-explain{
+    margin-top:10px;
+    padding:8px 12px;
+    border:1px solid var(--own-color);
+    border-radius:8px;
+    background:#fff;
+    font-size:.82rem;
+    color:var(--text);
+    line-height:1.5;
+  }
+  .ref-explain b{color:var(--own-color);}
+
   .ref-slider{margin:6px 2px 8px;}
   .ref-slider-track{
     position:relative;
@@ -616,6 +628,12 @@ function scalePct(value){
   return ((value - 1) / 4) * 100;
 }
 
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function renderReferenceBox(code){
   const ownRaw = OWN_ANSWERS && Object.prototype.hasOwnProperty.call(OWN_ANSWERS, code) ? OWN_ANSWERS[code] : '';
   const ownNum = parseFloat(ownRaw);
@@ -630,9 +648,14 @@ function renderReferenceBox(code){
     <span class="ref-pill ${stat.pass ? 'pass' : 'fail'}">${stat.pass ? '✓ ผ่านฉันทามติ' : 'ยังไม่ถึงฉันทามติ'}</span>` : ''}
   </div>`;
 
+  const explainBox = (stat && stat.explain)
+    ? `<div class="ref-explain"><b>หมายเหตุ:</b> ${escapeHtml(stat.explain)}</div>`
+    : '';
+
   if(!stat || !stat.n){
     return `<div class="ref-box">
       ${chips}
+      ${explainBox}
       <span class="ref-chip muted">ยังไม่มีข้อมูลกลุ่มเพียงพอสำหรับข้อนี้</span>
     </div>`;
   }
@@ -644,6 +667,7 @@ function renderReferenceBox(code){
 
   return `<div class="ref-box">
     ${chips}
+    ${explainBox}
     <div class="ref-slider">
       <div class="ref-slider-track">
         <div class="ref-slider-range" style="left:${rangeLeft}%;width:${rangeWidth}%;"></div>
