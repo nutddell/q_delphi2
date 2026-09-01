@@ -1,20 +1,24 @@
 /**
- * Delphi Round 2 survey web app.
- * Serves Index.html and stores each submission as a row in the "Responses"
- * sheet of the spreadsheet this script is bound to.
+ * Delphi survey web app (rounds 2 and 3).
+ * Serves Index.html (round 2), Round3.html (round 3), Stat.html and
+ * StatR3.html (their respective statistics pages), and stores each
+ * submission as a row in a per-round sheet of the spreadsheet this
+ * script is bound to.
  */
 
 var SHEET_NAME = 'Responses';
+var SHEET_NAME_R3 = 'Responses_R3';
 var QUESTION_SHEET_NAME = 'คำถามอ้างอิง';
 var STAT_SHEET_NAME = 'สรุปผลสถิติ';
+var STAT_SHEET_NAME_R3 = 'สรุปผลสถิติ รอบ 3';
 var USERNAME_HEADER = 'username';
 var RESPONDENT_PATTERN = /^res(0[1-9]|1[0-9]|2[01])$/;
 
-// Shared passcode gating the /?page=stat statistics page. This is only
-// light, obscurity-level protection (no real user accounts in Apps
-// Script web apps) — change it before deploying, and don't rely on it
-// for anything more sensitive than "keep the 21 respondents from seeing
-// aggregate results early."
+// Shared passcode gating the /?page=stat and /?page=statr3 statistics
+// pages. This is only light, obscurity-level protection (no real user
+// accounts in Apps Script web apps) — change it before deploying, and
+// don't rely on it for anything more sensitive than "keep the 21
+// respondents from seeing aggregate results early."
 var STAT_ACCESS_KEY = 'CHANGE_ME_ADMIN_KEY';
 
 function doGet(e) {
@@ -23,6 +27,22 @@ function doGet(e) {
   if (page === 'stat') {
     return HtmlService.createHtmlOutputFromFile('Stat')
       .setTitle('สรุปผลสถิติ — เดลฟาย รอบที่ 2')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  if (page === 'statr3') {
+    return HtmlService.createHtmlOutputFromFile('StatR3')
+      .setTitle('สรุปผลสถิติ — เดลฟาย รอบที่ 3')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  if (page === 'round3') {
+    var r3Template = HtmlService.createTemplateFromFile('Round3');
+    r3Template.sectionsJson = JSON.stringify(SECTIONS).replace(/<\//g, '<\\/');
+    return r3Template.evaluate()
+      .setTitle('แบบสอบถามเทคนิคเดลฟาย รอบที่ 3')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
@@ -40,13 +60,21 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function getSheet_() {
+function getNamedSheet_(name) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_NAME);
+  var sheet = ss.getSheetByName(name);
   if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
+    sheet = ss.insertSheet(name);
   }
   return sheet;
+}
+
+function getSheet_() {
+  return getNamedSheet_(SHEET_NAME);
+}
+
+function getSheetR3_() {
+  return getNamedSheet_(SHEET_NAME_R3);
 }
 
 /**
@@ -103,11 +131,12 @@ function normalizeUsername_(username) {
 }
 
 /**
- * Looks up an existing response row for a (already-normalized) username.
- * Returns { timestamp } if found, or null.
+ * Looks up an existing response row for a (already-normalized) username
+ * in the given sheet. Returns { timestamp, rowValues, headers } if
+ * found, or null. rowValues/headers let callers pull out that
+ * respondent's individual answers (see getOwnAnswersMap_).
  */
-function findResponseRowByUsername_(username) {
-  var sheet = getSheet_();
+function findResponseRowInSheetByUsername_(sheet, username) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
 
@@ -121,10 +150,38 @@ function findResponseRowByUsername_(username) {
   for (var i = 0; i < data.length; i++) {
     var value = String(data[i][usernameCol] || '').trim().toLowerCase();
     if (value === username) {
-      return { timestamp: timestampCol !== -1 ? data[i][timestampCol] : null };
+      return {
+        timestamp: timestampCol !== -1 ? data[i][timestampCol] : null,
+        headers: headers,
+        rowValues: data[i]
+      };
     }
   }
   return null;
+}
+
+/**
+ * Round 2 convenience wrapper kept for the existing round-2 call sites.
+ */
+function findResponseRowByUsername_(username) {
+  var found = findResponseRowInSheetByUsername_(getSheet_(), username);
+  return found ? { timestamp: found.timestamp } : null;
+}
+
+/**
+ * Builds a { itemCode: answerValue } map of one respondent's answers in
+ * the given sheet (skipping the timestamp/username columns). Returns {}
+ * if that username has no row there.
+ */
+function getOwnAnswersMap_(sheet, username) {
+  var found = findResponseRowInSheetByUsername_(sheet, username);
+  if (!found) return {};
+  var map = {};
+  found.headers.forEach(function (header, idx) {
+    if (header === 'timestamp' || header === USERNAME_HEADER) return;
+    map[header] = found.rowValues[idx];
+  });
+  return map;
 }
 
 /**
@@ -138,6 +195,45 @@ function checkRespondentStatus(username) {
   return {
     alreadySubmitted: !!existing,
     submittedAt: existing && existing.timestamp ? new Date(existing.timestamp).toISOString() : null
+  };
+}
+
+/**
+ * Round 3 login step: blocks a respondent who already submitted round 3
+ * the same way checkRespondentStatus does for round 2, but otherwise
+ * returns their own round-2 answers plus the round-2 group median/IQR
+ * per item, so Round3.html can pre-fill each question with their prior
+ * answer and show it alongside the group's consensus stats.
+ */
+function checkRound3Status(username) {
+  var normalized = normalizeUsername_(username);
+
+  var r3Sheet = getSheetR3_();
+  var existingR3 = findResponseRowInSheetByUsername_(r3Sheet, normalized);
+  if (existingR3) {
+    return {
+      alreadySubmitted: true,
+      submittedAt: existingR3.timestamp ? new Date(existingR3.timestamp).toISOString() : null
+    };
+  }
+
+  var r2Sheet = getSheet_();
+  var ownAnswers = getOwnAnswersMap_(r2Sheet, normalized);
+  var r2Stats = computeStatisticsForSheet_(r2Sheet);
+  var groupStats = {};
+  r2Stats.items.forEach(function (item) {
+    groupStats[item.code] = {
+      n: item.n,
+      median: item.median,
+      iqr: item.iqr,
+      pass: item.pass
+    };
+  });
+
+  return {
+    alreadySubmitted: false,
+    ownAnswers: ownAnswers,
+    groupStats: groupStats
   };
 }
 
@@ -167,6 +263,40 @@ function ensureUsernameColumn_(sheet) {
 }
 
 /**
+ * Shared row-append logic for both rounds' submit endpoints: writes the
+ * header row on first use (or retrofits the username column into an
+ * older header row), re-checks for a duplicate username inside the
+ * caller's lock, then appends the answer row. Throws on a duplicate.
+ */
+function appendSurveyRow_(sheet, username, payload, duplicateMessage) {
+  var hasHeaders = sheet.getLastRow() > 0 &&
+    sheet.getRange(1, 1).getValue() !== '';
+
+  if (!hasHeaders) {
+    var headerRow = ['timestamp', USERNAME_HEADER].concat(payload.headers);
+    sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+    sheet.setFrozenRows(1);
+  } else {
+    ensureUsernameColumn_(sheet);
+  }
+
+  if (findResponseRowInSheetByUsername_(sheet, username)) {
+    throw new Error(duplicateMessage);
+  }
+
+  var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var row = existingHeaders.map(function (header) {
+    if (header === 'timestamp') return new Date();
+    if (header === USERNAME_HEADER) return username;
+    return Object.prototype.hasOwnProperty.call(payload.answers, header)
+      ? payload.answers[header]
+      : '';
+  });
+
+  sheet.appendRow(row);
+}
+
+/**
  * Called from the client via google.script.run.
  * payload = { username: string, headers: string[], answers: { [key]: string } }
  * headers gives the canonical column order (excluding the timestamp and
@@ -181,35 +311,38 @@ function submitSurvey(payload) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    var sheet = getSheet_();
-    var hasHeaders = sheet.getLastRow() > 0 &&
-      sheet.getRange(1, 1).getValue() !== '';
+    appendSurveyRow_(
+      getSheet_(),
+      username,
+      payload,
+      'รหัส ' + username + ' เคยตอบแบบสอบถามนี้ไปแล้ว ไม่สามารถส่งซ้ำได้'
+    );
+    return { status: 'ok' };
+  } finally {
+    lock.releaseLock();
+  }
+}
 
-    if (!hasHeaders) {
-      var headerRow = ['timestamp', USERNAME_HEADER].concat(payload.headers);
-      sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
-      sheet.setFrozenRows(1);
-    } else {
-      ensureUsernameColumn_(sheet);
-    }
+/**
+ * Round 3 counterpart of submitSurvey(), writing to the separate
+ * Responses_R3 sheet instead of Responses so round-2 data is never
+ * touched.
+ */
+function submitRound3Survey(payload) {
+  if (!payload || !Array.isArray(payload.headers) || typeof payload.answers !== 'object') {
+    throw new Error('ข้อมูลที่ส่งมาไม่ถูกต้อง');
+  }
+  var username = normalizeUsername_(payload.username);
 
-    // Re-check for a duplicate inside the lock: the client-side check at
-    // login time is only a UX convenience and can't prevent two
-    // concurrent submissions under the same username.
-    if (findResponseRowByUsername_(username)) {
-      throw new Error('รหัส ' + username + ' เคยตอบแบบสอบถามนี้ไปแล้ว ไม่สามารถส่งซ้ำได้');
-    }
-
-    var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var row = existingHeaders.map(function (header) {
-      if (header === 'timestamp') return new Date();
-      if (header === USERNAME_HEADER) return username;
-      return Object.prototype.hasOwnProperty.call(payload.answers, header)
-        ? payload.answers[header]
-        : '';
-    });
-
-    sheet.appendRow(row);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    appendSurveyRow_(
+      getSheetR3_(),
+      username,
+      payload,
+      'รหัส ' + username + ' เคยตอบแบบสอบถามรอบที่ 3 นี้ไปแล้ว ไม่สามารถส่งซ้ำได้'
+    );
     return { status: 'ok' };
   } finally {
     lock.releaseLock();
@@ -218,7 +351,7 @@ function submitSurvey(payload) {
 
 /**
  * Throws unless `key` matches STAT_ACCESS_KEY. Called at the top of every
- * server function the Stat page uses, so the underlying data is never
+ * server function the Stat pages use, so the underlying data is never
  * returned to a client that hasn't supplied the passcode — the page shell
  * itself is public, but its content is not.
  */
@@ -228,7 +361,7 @@ function checkStatAccess_(key) {
   }
 }
 
-function round2_(n) {
+function roundTo2_(n) {
   return Math.round(n * 100) / 100;
 }
 
@@ -251,14 +384,13 @@ function percentile_(sorted, p) {
 }
 
 /**
- * Reads every response row and computes, per item: n, median, Q1, Q3,
- * IQR (Q3-Q1) and mean, plus whether it passes the round's stated
- * criteria (median >= 3.50 and IQR <= 1.50, per the instructions shown
- * on the survey page). Cheap enough (≤21 respondents × 127 items) to
- * recompute on every request rather than caching.
+ * Reads every response row of the given sheet and computes, per item:
+ * n, median, Q1, Q3, IQR (Q3-Q1) and mean, plus whether it passes the
+ * stated criteria (median >= 3.50 and IQR <= 1.50, per the instructions
+ * shown on the survey pages). Cheap enough (≤21 respondents × 127 items)
+ * to recompute on every request rather than caching.
  */
-function computeStatistics_() {
-  var sheet = getSheet_();
+function computeStatisticsForSheet_(sheet) {
   var lastRow = sheet.getLastRow();
 
   var headers = [];
@@ -308,11 +440,11 @@ function computeStatistics_() {
         sectionTitle: sec.title,
         text: item.text,
         n: n,
-        median: median !== null ? round2_(median) : null,
-        q1: q1 !== null ? round2_(q1) : null,
-        q3: q3 !== null ? round2_(q3) : null,
-        iqr: iqr !== null ? round2_(iqr) : null,
-        mean: mean !== null ? round2_(mean) : null,
+        median: median !== null ? roundTo2_(median) : null,
+        q1: q1 !== null ? roundTo2_(q1) : null,
+        q3: q3 !== null ? roundTo2_(q3) : null,
+        iqr: iqr !== null ? roundTo2_(iqr) : null,
+        mean: mean !== null ? roundTo2_(mean) : null,
         pass: pass
       });
     });
@@ -326,6 +458,14 @@ function computeStatistics_() {
   };
 }
 
+function computeStatistics_() {
+  return computeStatisticsForSheet_(getSheet_());
+}
+
+function computeStatisticsR3_() {
+  return computeStatisticsForSheet_(getSheetR3_());
+}
+
 /**
  * Called from Stat.html after the researcher enters the passcode.
  */
@@ -335,17 +475,22 @@ function getStatistics(key) {
 }
 
 /**
- * Called from Stat.html's "บันทึกผลลงชีต" button: snapshots the current
- * statistics into a "สรุปผลสถิติ" sheet tab so the researcher has a
- * dated, permanent record (overwrites the tab's previous content).
+ * Called from StatR3.html after the researcher enters the passcode.
  */
-function saveStatisticsToSheet(key) {
+function getStatisticsR3(key) {
   checkStatAccess_(key);
-  var stats = computeStatistics_();
+  return computeStatisticsR3_();
+}
 
+/**
+ * Shared snapshot-writer used by both saveStatisticsToSheet() and
+ * saveStatisticsR3ToSheet(): overwrites the given sheet tab with the
+ * current statistics table.
+ */
+function writeStatSnapshot_(sheetName, stats) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(STAT_SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(STAT_SHEET_NAME);
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
   sheet.clearContents();
 
   var rows = [[
@@ -373,7 +518,32 @@ function saveStatisticsToSheet(key) {
   sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, rows[0].length);
+}
 
+/**
+ * Called from Stat.html's "บันทึกผลลงชีต" button: snapshots the current
+ * statistics into a "สรุปผลสถิติ" sheet tab so the researcher has a
+ * dated, permanent record (overwrites the tab's previous content).
+ */
+function saveStatisticsToSheet(key) {
+  checkStatAccess_(key);
+  var stats = computeStatistics_();
+  writeStatSnapshot_(STAT_SHEET_NAME, stats);
+  return {
+    status: 'ok',
+    savedAt: new Date().toISOString(),
+    respondentCount: stats.respondentCount
+  };
+}
+
+/**
+ * Round 3 counterpart of saveStatisticsToSheet(), writing to
+ * "สรุปผลสถิติ รอบ 3" instead.
+ */
+function saveStatisticsR3ToSheet(key) {
+  checkStatAccess_(key);
+  var stats = computeStatisticsR3_();
+  writeStatSnapshot_(STAT_SHEET_NAME_R3, stats);
   return {
     status: 'ok',
     savedAt: new Date().toISOString(),

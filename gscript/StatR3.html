@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปผลสถิติ — เดลฟาย รอบที่ 3</title>
+<style>
+  :root{
+    --navy:#123a5c;
+    --navy-dark:#0b2740;
+    --accent:#b8860b;
+    --accent-soft:#f4e9d8;
+    --bg:#f5f7f9;
+    --card:#ffffff;
+    --border:#dbe3ea;
+    --text:#1f2937;
+    --text-soft:#5b6b7a;
+    --sub-bg:#f8fafc;
+    --ok:#2e7d32;
+    --ok-soft:#e6f4ea;
+    --fail:#c0392b;
+    --fail-soft:#fdecea;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sarabun','Leelawadee UI','Segoe UI',Tahoma,Arial,sans-serif;
+    line-height:1.6;
+    padding-bottom:60px;
+  }
+  header.hero{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);
+    color:#fff;
+    padding:30px 20px 24px;
+    text-align:center;
+  }
+  header.hero .kicker{
+    letter-spacing:.12em;
+    font-size:.78rem;
+    text-transform:uppercase;
+    color:var(--accent-soft);
+    opacity:.85;
+    margin-bottom:8px;
+  }
+  header.hero h1{font-size:1.35rem;margin:0;font-weight:700;}
+
+  main{max-width:1040px;margin:0 auto;padding:24px 16px 40px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 1px 3px rgba(18,58,92,.05);
+  }
+  .card h2{font-size:1.1rem;color:var(--navy);margin:0 0 10px;}
+  .instructions{font-size:.9rem;color:var(--text-soft);}
+
+  #loginCard{max-width:460px;margin:40px auto;}
+  #loginCard input[type=password]{
+    width:100%;max-width:260px;padding:9px 12px;border:1px solid var(--border);
+    border-radius:8px;font-family:inherit;font-size:.9rem;
+  }
+  .field{margin:14px 0;}
+  .field label{display:block;font-weight:700;color:var(--navy);margin-bottom:8px;font-size:.9rem;}
+  button.btn{
+    background:var(--navy);color:#fff;border:none;padding:11px 26px;
+    font-size:.92rem;font-weight:700;border-radius:999px;cursor:pointer;
+    font-family:inherit;
+  }
+  button.btn:hover{background:var(--navy-dark);}
+  button.btn:disabled{opacity:.6;cursor:not-allowed;}
+  button.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  button.btn.secondary:hover{background:var(--sub-bg);}
+
+  .error-banner{
+    display:none;margin-top:14px;padding:12px 16px;border-radius:10px;
+    background:var(--fail-soft);border:1px solid #f5c2bd;color:#8b2b22;font-size:.86rem;
+  }
+  .note-banner{
+    display:none;margin-top:14px;padding:12px 16px;border-radius:10px;
+    background:var(--ok-soft);border:1px solid #b7dfc2;color:#1e5b2f;font-size:.86rem;
+  }
+
+  #statContent{display:none;}
+
+  .summary-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .summary-tile{
+    flex:1 1 160px;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:16px;text-align:center;
+  }
+  .summary-tile .num{font-size:1.6rem;font-weight:700;color:var(--navy);}
+  .summary-tile .label{font-size:.8rem;color:var(--text-soft);margin-top:4px;}
+  .summary-tile.pass .num{color:var(--ok);}
+  .summary-tile.fail .num{color:var(--fail);}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+
+  details.section-acc{
+    border:1px solid var(--border);border-radius:14px;background:var(--card);
+    margin-bottom:16px;overflow:hidden;
+  }
+  details.section-acc summary{
+    list-style:none;cursor:pointer;padding:14px 18px;display:flex;
+    justify-content:space-between;align-items:center;
+    background:linear-gradient(135deg,#f0f5f9,#ffffff);
+  }
+  details.section-acc summary::-webkit-details-marker{display:none;}
+  details.section-acc summary h3{margin:0;font-size:1rem;color:var(--navy);}
+  details.section-acc summary .chev{color:var(--navy);transition:transform .2s ease;}
+  details.section-acc[open] summary .chev{transform:rotate(180deg);}
+
+  table.stat-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+  table.stat-table th,table.stat-table td{
+    padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;
+  }
+  table.stat-table th{background:var(--sub-bg);color:var(--navy);font-size:.78rem;white-space:nowrap;}
+  table.stat-table td.num{text-align:center;white-space:nowrap;}
+  table.stat-table tr.level-sub td.qtext{color:var(--text-soft);font-size:.83rem;}
+  .badge{
+    font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff;
+    background:var(--navy);white-space:nowrap;
+  }
+  tr.level-sub .badge{background:#6b7f92;}
+  .pill{
+    display:inline-block;font-size:.74rem;font-weight:700;padding:3px 10px;
+    border-radius:999px;white-space:nowrap;
+  }
+  .pill.pass{background:var(--ok-soft);color:#1e5b2f;}
+  .pill.fail{background:var(--fail-soft);color:#8b2b22;}
+
+  .table-scroll{overflow-x:auto;}
+
+  @media (max-width:600px){
+    header.hero h1{font-size:1.1rem;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Delphi Technique · Round 3</div>
+  <h1>สรุปผลการวิเคราะห์ทางสถิติ (มัธยฐาน &amp; IQR)</h1>
+</header>
+
+<main>
+
+  <div class="card" id="loginCard">
+    <h2>เข้าสู่หน้าสรุปผลสถิติ รอบที่ 3</h2>
+    <p class="instructions">หน้านี้สำหรับผู้วิจัยเท่านั้น กรุณาระบุรหัสผ่านเพื่อดูผลการคำนวณมัธยฐานและ IQR ของทุกข้อคำถามจากข้อมูลรอบที่ 3</p>
+    <div class="field">
+      <label for="accessKey">รหัสผ่าน</label>
+      <input type="password" id="accessKey" placeholder="รหัสผ่านผู้ดูแลระบบ" autocomplete="off">
+    </div>
+    <button class="btn" id="loginBtn" type="button">เข้าสู่ระบบ</button>
+    <div class="error-banner" id="loginError"></div>
+  </div>
+
+  <div id="statContent">
+
+    <div class="card">
+      <h2>เกณฑ์การแปลผล</h2>
+      <p class="instructions">
+        ค่ามัธยฐาน (Median) ตั้งแต่ 3.50 ขึ้นไป และค่าพิสัยระหว่างควอไทล์ (IQR = Q3 − Q1) ไม่เกิน 1.50
+        ถือว่าข้อคำถามนั้น <b>ผ่านเกณฑ์</b> และนำเข้าสู่การพิจารณาในเดลฟายรอบถัดไป
+        (คำนวณด้วยวิธี linear interpolation แบบเดียวกับฟังก์ชัน QUARTILE/PERCENTILE ของ Google Sheets)
+      </p>
+    </div>
+
+    <div class="summary-row" id="summaryRow"></div>
+
+    <div class="toolbar">
+      <div id="generatedAtLabel" style="font-size:.82rem;color:var(--text-soft);"></div>
+      <div>
+        <button class="btn secondary" id="refreshBtn" type="button">คำนวณใหม่</button>
+        <button class="btn" id="saveBtn" type="button">บันทึกผลลงชีต Google Sheet</button>
+      </div>
+    </div>
+    <div class="note-banner" id="saveNote"></div>
+    <div class="error-banner" id="statError"></div>
+
+    <div id="sectionsContainer"></div>
+
+  </div>
+
+</main>
+
+<script>
+let ACCESS_KEY = null;
+const SECTION_TITLES = {}; // sectionKey -> title, filled in as stats arrive
+
+function showLoginError(msg){
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideLoginError(){
+  document.getElementById('loginError').style.display = 'none';
+}
+function showStatError(msg){
+  const el = document.getElementById('statError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideStatError(){
+  document.getElementById('statError').style.display = 'none';
+}
+
+function formatNum(n){
+  return (n === null || n === undefined) ? '—' : n.toFixed(2);
+}
+
+function renderSummary(stats){
+  const total = stats.items.length;
+  const passCount = stats.items.filter(i => i.pass).length;
+  const failCount = total - passCount;
+  const row = document.getElementById('summaryRow');
+  row.innerHTML = `
+    <div class="summary-tile">
+      <div class="num">${stats.respondentCount} / ${stats.totalRespondents}</div>
+      <div class="label">ผู้เชี่ยวชาญที่ตอบแล้ว</div>
+    </div>
+    <div class="summary-tile pass">
+      <div class="num">${passCount}</div>
+      <div class="label">ข้อที่ผ่านเกณฑ์ (จาก ${total} ข้อ)</div>
+    </div>
+    <div class="summary-tile fail">
+      <div class="num">${failCount}</div>
+      <div class="label">ข้อที่ยังไม่ผ่านเกณฑ์</div>
+    </div>
+  `;
+}
+
+function renderSections(stats){
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+
+  const bySection = [];
+  const indexOf = {};
+  stats.items.forEach(item => {
+    if (!(item.sectionKey in indexOf)) {
+      indexOf[item.sectionKey] = bySection.length;
+      bySection.push({ key: item.sectionKey, title: item.sectionTitle, items: [] });
+    }
+    bySection[indexOf[item.sectionKey]].items.push(item);
+  });
+
+  bySection.forEach((sec, idx) => {
+    const details = document.createElement('details');
+    details.className = 'section-acc';
+    if (idx === 0) details.open = true;
+
+    const passCount = sec.items.filter(i => i.pass).length;
+    const summary = document.createElement('summary');
+    summary.innerHTML = `<h3>${sec.title}</h3><span style="display:flex;align-items:center;gap:10px;"><span class="pill pass">ผ่าน ${passCount}/${sec.items.length}</span><span class="chev">&#9660;</span></span>`;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'table-scroll';
+
+    let rows = '';
+    sec.items.forEach(item => {
+      rows += `
+        <tr class="level-${item.level}">
+          <td><span class="badge">${item.code}</span></td>
+          <td class="qtext">${item.text}</td>
+          <td class="num">${item.n}</td>
+          <td class="num">${formatNum(item.median)}</td>
+          <td class="num">${formatNum(item.q1)}</td>
+          <td class="num">${formatNum(item.q3)}</td>
+          <td class="num">${formatNum(item.iqr)}</td>
+          <td class="num">${formatNum(item.mean)}</td>
+          <td class="num"><span class="pill ${item.pass ? 'pass' : 'fail'}">${item.pass ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์'}</span></td>
+        </tr>
+      `;
+    });
+
+    body.innerHTML = `
+      <table class="stat-table">
+        <thead>
+          <tr>
+            <th>รหัสข้อ</th>
+            <th>ข้อคำถาม</th>
+            <th>n</th>
+            <th>Median</th>
+            <th>Q1</th>
+            <th>Q3</th>
+            <th>IQR</th>
+            <th>Mean</th>
+            <th>ผล</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    details.appendChild(body);
+    container.appendChild(details);
+  });
+}
+
+function renderStatistics(stats){
+  renderSummary(stats);
+  renderSections(stats);
+  const when = new Date(stats.generatedAt).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+  document.getElementById('generatedAtLabel').textContent = `คำนวณล่าสุดเมื่อ ${when}`;
+}
+
+function loadStatistics(){
+  hideStatError();
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = 'กำลังคำนวณ...';
+
+  google.script.run
+    .withSuccessHandler((stats)=>{
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'คำนวณใหม่';
+      renderStatistics(stats);
+    })
+    .withFailureHandler((err)=>{
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'คำนวณใหม่';
+      showStatError('เกิดข้อผิดพลาดในการคำนวณ: ' + (err && err.message ? err.message : err));
+    })
+    .getStatisticsR3(ACCESS_KEY);
+}
+
+document.getElementById('loginBtn').addEventListener('click', ()=>{
+  const key = document.getElementById('accessKey').value;
+  hideLoginError();
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังตรวจสอบ...';
+
+  google.script.run
+    .withSuccessHandler((stats)=>{
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
+      ACCESS_KEY = key;
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('statContent').style.display = 'block';
+      renderStatistics(stats);
+    })
+    .withFailureHandler((err)=>{
+      btn.disabled = false;
+      btn.textContent = 'เข้าสู่ระบบ';
+      showLoginError('เข้าสู่ระบบไม่สำเร็จ: ' + (err && err.message ? err.message : err));
+    })
+    .getStatisticsR3(key);
+});
+
+document.getElementById('accessKey').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', loadStatistics);
+
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  document.getElementById('saveNote').style.display = 'none';
+  hideStatError();
+
+  google.script.run
+    .withSuccessHandler((result)=>{
+      btn.disabled = false;
+      btn.textContent = 'บันทึกผลลงชีต Google Sheet';
+      const when = new Date(result.savedAt).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+      const note = document.getElementById('saveNote');
+      note.textContent = `บันทึกผลลงชีต "สรุปผลสถิติ รอบ 3" เรียบร้อยแล้ว เมื่อ ${when} (ผู้ตอบ ${result.respondentCount} ท่าน)`;
+      note.style.display = 'block';
+    })
+    .withFailureHandler((err)=>{
+      btn.disabled = false;
+      btn.textContent = 'บันทึกผลลงชีต Google Sheet';
+      showStatError('บันทึกไม่สำเร็จ: ' + (err && err.message ? err.message : err));
+    })
+    .saveStatisticsR3ToSheet(ACCESS_KEY);
+});
+</script>
+
+</body>
+</html>
