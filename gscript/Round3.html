@@ -17,6 +17,7 @@
     --text-soft:#5b6b7a;
     --sub-bg:#f8fafc;
     --ok:#2e7d32;
+    --own-color:#c0392b;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -267,54 +268,116 @@
   .item.level-sub .item-text{font-size:.87rem;color:var(--text-soft);}
 
   .ref-box{
-    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    background:var(--sub-bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px 14px;
     margin:8px 0 12px;
   }
-  .ref-chip{
-    font-size:.78rem;color:var(--text-soft);
-    background:var(--sub-bg);border:1px solid var(--border);
-    border-radius:8px;padding:5px 10px;
+  .ref-chips{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    margin-bottom:10px;
   }
-  .ref-chip b{color:var(--navy);}
-  .ref-chip.muted{color:var(--text-soft);font-style:italic;}
+  .ref-chip{
+    font-size:.78rem;
+    border-radius:8px;padding:5px 10px;
+    border:1px solid transparent;
+  }
+  .ref-chip b{font-weight:700;}
+  .ref-chip.own-chip{background:#fdecea;color:var(--own-color);border-color:#f3c6bd;}
+  .ref-chip.own-chip b{color:var(--own-color);}
+  .ref-chip.median-chip{background:#eaf1f8;color:var(--navy);border-color:#cddced;}
+  .ref-chip.median-chip b{color:var(--navy);}
+  .ref-chip.iqr-chip{background:#fdf3e0;color:var(--accent);border-color:#f0dba8;}
+  .ref-chip.iqr-chip b{color:var(--accent);}
+  .ref-chip.muted{color:var(--text-soft);font-style:italic;background:transparent;border-color:var(--border);}
   .ref-pill{
     font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;
   }
   .ref-pill.pass{background:#e6f4ea;color:#1e5b2f;}
   .ref-pill.fail{background:#fdecea;color:#8b2b22;}
 
+  .ref-slider{margin:6px 2px 8px;}
+  .ref-slider-track{
+    position:relative;
+    height:8px;
+    background:var(--border);
+    border-radius:999px;
+    margin:14px 6px 6px;
+  }
+  .ref-slider-range{
+    position:absolute;top:0;height:100%;
+    background:var(--accent);
+    opacity:.45;
+    border-radius:999px;
+  }
+  .ref-slider-median,
+  .ref-slider-own{
+    position:absolute;
+    top:50%;
+    width:18px;height:18px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  .ref-slider-median{
+    background:var(--navy);
+    border:2px solid #fff;
+    z-index:2;
+  }
+  .ref-slider-own{
+    background:#fff;
+    border:3px solid var(--own-color);
+    z-index:3;
+  }
+  .ref-slider-ticks{
+    display:flex;justify-content:space-between;
+    margin:0 -3px;
+    font-size:.72rem;color:var(--text-soft);
+  }
+  .ref-slider-legend{
+    display:flex;flex-wrap:wrap;gap:14px;
+    margin-top:8px;
+    font-size:.74rem;color:var(--text-soft);
+  }
+  .ref-slider-legend .legend-item{display:flex;align-items:center;gap:5px;}
+  .legend-dot{width:11px;height:11px;border-radius:50%;display:inline-block;}
+  .legend-dot.median{background:var(--navy);}
+  .legend-dot.own{background:#fff;border:2px solid var(--own-color);}
+  .legend-bar{width:16px;height:6px;border-radius:999px;background:var(--accent);opacity:.45;display:inline-block;}
+
   .likert{
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:14px;
     justify-content:space-between;
-    max-width:640px;
+    max-width:100%;
     margin-left:2px;
   }
   .likert-option{
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:7px;
-    font-size:.78rem;
+    gap:8px;
+    font-size:.85rem;
     color:var(--text-soft);
     cursor:pointer;
     flex:1;
     text-align:center;
   }
   .likert-option input[type=radio]{
-    width:24px;height:24px;accent-color:var(--navy);cursor:pointer;
+    width:28px;height:28px;accent-color:var(--navy);cursor:pointer;
   }
   .likert-num{
     display:flex;
     align-items:center;
     justify-content:center;
-    width:36px;
-    height:36px;
+    width:48px;
+    height:48px;
     border-radius:50%;
     color:#fff;
     font-weight:700;
-    font-size:.95rem;
+    font-size:1.15rem;
     line-height:1;
     transition:transform .15s ease, box-shadow .15s ease;
     box-shadow:0 1px 2px rgba(0,0,0,.15);
@@ -427,10 +490,10 @@
   .user-badge b{color:var(--navy);}
 
   @media (max-width:600px){
-    .likert{max-width:none;}
-    .likert-option{font-size:.7rem;}
-    .likert-num{width:30px;height:30px;font-size:.82rem;}
-    .likert-option input[type=radio]{width:20px;height:20px;}
+    .likert{max-width:none;gap:8px;}
+    .likert-option{font-size:.76rem;}
+    .likert-num{width:40px;height:40px;font-size:1rem;}
+    .likert-option input[type=radio]{width:24px;height:24px;}
     header.hero h1{font-size:1.2rem;}
   }
 </style>
@@ -448,7 +511,6 @@
 <nav class="navbar" id="navbar" style="display:none;">
   <div class="navbar-inner">
     <div class="nav-links">
-      <a href="#part1">ส่วนที่ 1</a>
       <a href="#sec-P">ด้าน 1 การวางแผน</a>
       <a href="#sec-O">ด้าน 2 การจัดองค์การ</a>
       <a href="#sec-CM">ด้าน 3 การสั่งการ</a>
@@ -505,62 +567,6 @@
     </div>
   </div>
 
-  <div class="card" id="part1">
-    <h2>ส่วนที่ 1 &nbsp;ข้อมูลทั่วไปของผู้เชี่ยวชาญ</h2>
-
-    <div class="field">
-      <label class="field-title">1. เพศ<span class="required-mark">*</span></label>
-      <div class="option-row">
-        <label><input type="radio" name="p1_gender" value="เพศชาย" required> เพศชาย</label>
-        <label><input type="radio" name="p1_gender" value="เพศหญิง"> เพศหญิง</label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-title">2. อายุ<span class="required-mark">*</span></label>
-      <div class="option-row">
-        <label><input type="radio" name="p1_age" value="ต่ำกว่า 35 ปี" required> ต่ำกว่า 35 ปี</label>
-        <label><input type="radio" name="p1_age" value="35-45 ปี"> 35-45 ปี</label>
-        <label><input type="radio" name="p1_age" value="46-55 ปี"> 46-55 ปี</label>
-        <label><input type="radio" name="p1_age" value="มากกว่า 55 ปี"> มากกว่า 55 ปี</label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-title">3. วุฒิการศึกษา<span class="required-mark">*</span></label>
-      <div class="option-row">
-        <label><input type="radio" name="p1_edu" value="ต่ำกว่าปริญญาตรี" required> ต่ำกว่าปริญญาตรี</label>
-        <label><input type="radio" name="p1_edu" value="ปริญญาตรี"> ปริญญาตรี</label>
-        <label><input type="radio" name="p1_edu" value="ปริญญาโท"> ปริญญาโท</label>
-        <label><input type="radio" name="p1_edu" value="ปริญญาเอก"> ปริญญาเอก</label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-title" for="p1_position">4. ตำแหน่งปัจจุบัน<span class="required-mark">*</span></label>
-      <input type="text" id="p1_position" name="p1_position" required placeholder="ระบุตำแหน่งปัจจุบัน">
-    </div>
-
-    <div class="field">
-      <label class="field-title">5. ประสบการณ์ในการทำงาน<span class="required-mark">*</span></label>
-      <div class="option-row">
-        <label><input type="radio" name="p1_exp" value="3-5 ปี" required> 3-5 ปี</label>
-        <label><input type="radio" name="p1_exp" value="6-10 ปี"> 6-10 ปี</label>
-        <label><input type="radio" name="p1_exp" value="11-15 ปี"> 11-15 ปี</label>
-        <label><input type="radio" name="p1_exp" value="15 ปีขึ้นไป"> 15 ปีขึ้นไป</label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-title">6. ประเภทหน่วยงาน<span class="required-mark">*</span></label>
-      <div class="option-row">
-        <label><input type="radio" name="p1_org" value="หน่วยงานราชการ/องค์กรของรัฐ/รัฐวิสาหกิจ" required> หน่วยงานราชการ/องค์กรของรัฐ/รัฐวิสาหกิจ</label>
-        <label><input type="radio" name="p1_org" value="บริษัทเอกชน"> บริษัทเอกชน</label>
-      </div>
-      <input type="text" class="sub-input" id="p1_orgname" name="p1_orgname" placeholder="ระบุชื่อหน่วยงาน">
-    </div>
-  </div>
-
   <div id="sectionsContainer"></div>
 
   <div class="card" id="part3">
@@ -592,10 +598,8 @@ const SECTIONS = <?!= sectionsJson ?>;
 
 const TOTAL_ITEMS = SECTIONS.reduce((sum,s)=>sum+s.items.length,0);
 
-const PART1_FIELDS = ['p1_gender','p1_age','p1_edu','p1_position','p1_exp','p1_org','p1_orgname'];
-const ORDERED_KEYS = PART1_FIELDS.concat(
-  SECTIONS.reduce((keys, sec)=> keys.concat(sec.items.map(i=>i.code)), [])
-).concat(['part3_suggestion']);
+const ORDERED_KEYS = SECTIONS.reduce((keys, sec)=> keys.concat(sec.items.map(i=>i.code)), [])
+  .concat(['part3_suggestion']);
 
 function renderLikert(code, selectedValue){
   let html = '<div class="likert-row-wrap"><span class="likert-endcap">น้อยที่สุด</span><div class="likert">';
@@ -607,23 +611,52 @@ function renderLikert(code, selectedValue){
   return html;
 }
 
+function scalePct(value){
+  // Maps a 1-5 scale value onto a 0%-100% horizontal position.
+  return ((value - 1) / 4) * 100;
+}
+
 function renderReferenceBox(code){
   const ownRaw = OWN_ANSWERS && Object.prototype.hasOwnProperty.call(OWN_ANSWERS, code) ? OWN_ANSWERS[code] : '';
-  const ownText = (ownRaw !== '' && ownRaw !== undefined && ownRaw !== null) ? ownRaw : 'ไม่มีข้อมูล';
+  const ownNum = parseFloat(ownRaw);
+  const hasOwn = ownRaw !== '' && ownRaw !== undefined && ownRaw !== null && !isNaN(ownNum);
+  const ownText = hasOwn ? ownNum : 'ไม่มีข้อมูล';
   const stat = GROUP_STATS ? GROUP_STATS[code] : null;
+
+  const chips = `<div class="ref-chips">
+    <span class="ref-chip own-chip">คำตอบเดิมของท่าน (รอบ 2) <b>${ownText}</b></span>
+    ${stat && stat.n ? `<span class="ref-chip median-chip">Median <b>${stat.median.toFixed(2)}</b></span>
+    <span class="ref-chip iqr-chip">IQR <b>${stat.iqr.toFixed(2)}</b></span>
+    <span class="ref-pill ${stat.pass ? 'pass' : 'fail'}">${stat.pass ? '✓ ผ่านฉันทามติ' : 'ยังไม่ถึงฉันทามติ'}</span>` : ''}
+  </div>`;
 
   if(!stat || !stat.n){
     return `<div class="ref-box">
-      <span class="ref-chip">คำตอบเดิมของท่าน (รอบ 2): <b>${ownText}</b></span>
+      ${chips}
       <span class="ref-chip muted">ยังไม่มีข้อมูลกลุ่มเพียงพอสำหรับข้อนี้</span>
     </div>`;
   }
 
+  const rangeLeft = scalePct(stat.q1);
+  const rangeWidth = scalePct(stat.q3) - rangeLeft;
+  const medianLeft = scalePct(stat.median);
+  const ownLeft = scalePct(ownNum);
+
   return `<div class="ref-box">
-    <span class="ref-chip">คำตอบเดิมของท่าน (รอบ 2): <b>${ownText}</b></span>
-    <span class="ref-chip">มัธยฐานกลุ่ม: <b>${stat.median.toFixed(2)}</b></span>
-    <span class="ref-chip">IQR: <b>${stat.iqr.toFixed(2)}</b></span>
-    <span class="ref-pill ${stat.pass ? 'pass' : 'fail'}">${stat.pass ? 'ผ่านเกณฑ์แล้ว' : 'ยังไม่ถึงฉันทามติ'}</span>
+    ${chips}
+    <div class="ref-slider">
+      <div class="ref-slider-track">
+        <div class="ref-slider-range" style="left:${rangeLeft}%;width:${rangeWidth}%;"></div>
+        <div class="ref-slider-median" style="left:${medianLeft}%;" title="Median ${stat.median.toFixed(2)}"></div>
+        ${hasOwn ? `<div class="ref-slider-own" style="left:${ownLeft}%;" title="คำตอบเดิม ${ownNum}"></div>` : ''}
+      </div>
+      <div class="ref-slider-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+    </div>
+    <div class="ref-slider-legend">
+      <span class="legend-item"><i class="legend-dot median"></i>Median</span>
+      <span class="legend-item"><i class="legend-dot own"></i>คำตอบเดิม</span>
+      <span class="legend-item"><i class="legend-bar"></i>Q1–Q3</span>
+    </div>
   </div>`;
 }
 
@@ -776,14 +809,7 @@ document.getElementById('sectionsContainer').addEventListener('change', (e)=>{
 
 function collectAnswers(){
   const answers = {};
-  answers.p1_position = document.getElementById('p1_position').value.trim();
-  answers.p1_orgname = document.getElementById('p1_orgname').value.trim();
   answers.part3_suggestion = document.getElementById('part3_suggestion').value.trim();
-
-  ['p1_gender','p1_age','p1_edu','p1_exp','p1_org'].forEach(name=>{
-    const checked = document.querySelector(`input[name="${name}"]:checked`);
-    answers[name] = checked ? checked.value : '';
-  });
 
   SECTIONS.forEach(sec=>{
     sec.items.forEach(item=>{
@@ -816,16 +842,6 @@ function showThankYou(){
 
 document.getElementById('submitBtn').addEventListener('click', ()=>{
   const answered = updateProgress();
-
-  const requiredPart1 = ['p1_gender','p1_age','p1_edu','p1_exp','p1_org'];
-  let missingPart1 = requiredPart1.some(name => !document.querySelector(`input[name="${name}"]:checked`));
-  const posVal = document.getElementById('p1_position').value.trim();
-
-  if(missingPart1 || !posVal){
-    alert('กรุณากรอกข้อมูลทั่วไปของผู้เชี่ยวชาญ (ส่วนที่ 1) ให้ครบถ้วนก่อนส่งแบบสอบถาม');
-    document.getElementById('part1').scrollIntoView({behavior:'smooth'});
-    return;
-  }
 
   if(answered < TOTAL_ITEMS){
     alert(`กรุณาตอบข้อคำถามให้ครบทุกข้อ (ตอบแล้ว ${answered} จาก ${TOTAL_ITEMS} ข้อ)`);
