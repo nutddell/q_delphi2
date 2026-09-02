@@ -126,11 +126,19 @@
   .p-ref .fail{color:#8b2b22;border-color:#f3c6bd;background:#fdecea;}
   .p-ref .muted{font-style:italic;color:var(--text-soft);}
 
-  .p-explain{
-    margin:6px 0;padding:6px 10px;border:1px solid var(--own-color);border-radius:6px;
-    font-size:.78rem;background:#fff;
+  .p-comment{
+    margin:8px 0 4px;padding:8px 10px;border:1px solid var(--own-color);border-radius:6px;
+    background:#fffaf9;
   }
-  .p-explain b{color:var(--own-color);}
+  .p-comment .p-comment-label{
+    font-size:.74rem;font-weight:700;color:var(--own-color);display:block;margin-bottom:6px;
+  }
+  .p-comment .p-comment-lines{
+    height:50px;
+    background-image:repeating-linear-gradient(
+      to bottom, transparent, transparent 15px, var(--border) 15px, var(--border) 16px
+    );
+  }
 
   /* Slider graph — same visual language as Round3.html's reference box */
   .p-slider{margin:8px 2px 4px;}
@@ -191,6 +199,7 @@
     .p-slider-range,.p-slider-median,.p-slider-own,.p-legend-dot,.p-legend-bar{
       -webkit-print-color-adjust:exact;print-color-adjust:exact;
     }
+    .p-comment,.p-comment-lines{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     @page{size:A4 portrait;margin:15mm 14mm;}
   }
 </style>
@@ -285,12 +294,6 @@ function scalePct(value){
   return ((value - 1) / 4) * 100;
 }
 
-function escapeHtml(str){
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function renderPrintable(data){
   document.getElementById('metaUsername').textContent = data.username;
   document.getElementById('metaDate').textContent = new Date(data.generatedAt).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
@@ -365,13 +368,16 @@ function renderPrintable(data){
           <p class="p-text">${item.text}</p>
         </div>
         <div class="p-ref">${refParts.join('')}</div>
-        ${item.explain ? `<div class="p-explain"><b>หมายเหตุ:</b> ${escapeHtml(item.explain)}</div>` : ''}
         ${sliderHtml}
         <div class="p-scale">
           <span class="p-endcap">น้อยที่สุด</span>
           <div class="p-circles">${circles}</div>
           <span class="p-endcap right">มากที่สุด</span>
         </div>
+        ${!item.pass ? `<div class="p-comment">
+          <span class="p-comment-label">ข้อคิดเห็นเพิ่มเติมสำหรับข้อนี้ (ยังไม่ถึงฉันทามติในรอบ 2)</span>
+          <div class="p-comment-lines"></div>
+        </div>` : ''}
       `;
       container.appendChild(row);
     });

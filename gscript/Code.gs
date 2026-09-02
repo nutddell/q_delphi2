@@ -206,36 +206,6 @@ function checkRespondentStatus(username) {
 }
 
 /**
- * Reads a researcher-maintained "explain" column (added by hand next to
- * the auto-generated statistics columns in a สรุปผลสถิติ sheet) and
- * returns { itemCode: explanationText }. Returns {} if that sheet or
- * column doesn't exist yet, or has no รหัสข้อ column to match against.
- */
-function getExplanationMap_(sheetName) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return {};
-
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastRow < 2 || lastCol < 1) return {};
-
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  var explainCol = headers.indexOf('explain');
-  var codeCol = headers.indexOf('รหัสข้อ');
-  if (explainCol === -1 || codeCol === -1) return {};
-
-  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
-  var map = {};
-  data.forEach(function (row) {
-    var code = row[codeCol];
-    var explain = row[explainCol];
-    if (code && explain) map[code] = String(explain).trim();
-  });
-  return map;
-}
-
-/**
  * Round 3 login step: blocks a respondent who already submitted round 3
  * the same way checkRespondentStatus does for round 2, but otherwise
  * returns their own round-2 answers plus the round-2 group median/IQR
@@ -257,7 +227,6 @@ function checkRound3Status(username) {
   var r2Sheet = getSheet_();
   var ownAnswers = getOwnAnswersMap_(r2Sheet, normalized);
   var r2Stats = computeStatisticsForSheet_(r2Sheet);
-  var explainMap = getExplanationMap_(STAT_SHEET_NAME);
   var groupStats = {};
   r2Stats.items.forEach(function (item) {
     groupStats[item.code] = {
@@ -266,8 +235,7 @@ function checkRound3Status(username) {
       q1: item.q1,
       q3: item.q3,
       iqr: item.iqr,
-      pass: item.pass,
-      explain: explainMap[item.code] || ''
+      pass: item.pass
     };
   });
 
@@ -282,9 +250,9 @@ function checkRound3Status(username) {
  * Called from PrintRound3.html after the researcher enters the admin
  * passcode and a respondent's username: builds the same per-item data
  * checkRound3Status would (own round-2 answer, round-2 group median/
- * Q1/Q3/IQR/pass, and the researcher's "explain" note if any) as a flat
- * list ready to lay out on a printable A4 page — for the respondents
- * who'd rather mark a paper form by hand than use the web app.
+ * Q1/Q3/IQR/pass) as a flat list ready to lay out on a printable A4
+ * page — for the respondents who'd rather mark a paper form by hand
+ * than use the web app.
  * Requires STAT_ACCESS_KEY since it exposes one respondent's own answers
  * plus the group's aggregate stats, same sensitivity as the Stat pages.
  */
@@ -295,7 +263,6 @@ function getPrintRound3Data(key, username) {
   var r2Sheet = getSheet_();
   var ownAnswers = getOwnAnswersMap_(r2Sheet, normalized);
   var r2Stats = computeStatisticsForSheet_(r2Sheet);
-  var explainMap = getExplanationMap_(STAT_SHEET_NAME);
 
   var items = r2Stats.items.map(function (item) {
     return {
@@ -310,7 +277,6 @@ function getPrintRound3Data(key, username) {
       q3: item.q3,
       iqr: item.iqr,
       pass: item.pass,
-      explain: explainMap[item.code] || '',
       ownAnswer: Object.prototype.hasOwnProperty.call(ownAnswers, item.code) ? ownAnswers[item.code] : ''
     };
   });

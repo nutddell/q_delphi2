@@ -297,17 +297,31 @@
   .ref-pill.pass{background:#e6f4ea;color:#1e5b2f;}
   .ref-pill.fail{background:#fdecea;color:#8b2b22;}
 
-  .ref-explain{
+  .ref-comment{
     margin-top:10px;
-    padding:8px 12px;
+    padding:10px 12px;
     border:1px solid var(--own-color);
     border-radius:8px;
-    background:#fff;
-    font-size:.82rem;
-    color:var(--text);
-    line-height:1.5;
+    background:#fffaf9;
   }
-  .ref-explain b{color:var(--own-color);}
+  .ref-comment label{
+    display:block;
+    font-size:.8rem;
+    font-weight:700;
+    color:var(--own-color);
+    margin-bottom:6px;
+  }
+  .ref-comment textarea{
+    width:100%;
+    min-height:64px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-family:inherit;
+    font-size:.86rem;
+    resize:vertical;
+  }
+  .ref-comment textarea:focus{outline:2px solid var(--own-color);border-color:var(--own-color);}
 
   .ref-slider{margin:6px 2px 8px;}
   .ref-slider-track{
@@ -610,8 +624,22 @@ const SECTIONS = <?!= sectionsJson ?>;
 
 const TOTAL_ITEMS = SECTIONS.reduce((sum,s)=>sum+s.items.length,0);
 
-const ORDERED_KEYS = SECTIONS.reduce((keys, sec)=> keys.concat(sec.items.map(i=>i.code)), [])
-  .concat(['part3_suggestion']);
+// Built once we know GROUP_STATS (after login), since which items get a
+// "${code}_comment" key depends on which ones didn't pass in round 2.
+let ORDERED_KEYS = [];
+
+function buildOrderedKeys(){
+  const keys = [];
+  SECTIONS.forEach(sec=>{
+    sec.items.forEach(item=>{
+      keys.push(item.code);
+      const stat = GROUP_STATS ? GROUP_STATS[item.code] : null;
+      if(stat && !stat.pass) keys.push(item.code + '_comment');
+    });
+  });
+  keys.push('part3_suggestion');
+  return keys;
+}
 
 function renderLikert(code, selectedValue){
   let html = '<div class="likert-row-wrap"><span class="likert-endcap">น้อยที่สุด</span><div class="likert">';
@@ -628,12 +656,6 @@ function scalePct(value){
   return ((value - 1) / 4) * 100;
 }
 
-function escapeHtml(str){
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function renderReferenceBox(code){
   const ownRaw = OWN_ANSWERS && Object.prototype.hasOwnProperty.call(OWN_ANSWERS, code) ? OWN_ANSWERS[code] : '';
   const ownNum = parseFloat(ownRaw);
@@ -648,14 +670,9 @@ function renderReferenceBox(code){
     <span class="ref-pill ${stat.pass ? 'pass' : 'fail'}">${stat.pass ? '✓ ผ่านฉันทามติ' : 'ยังไม่ถึงฉันทามติ'}</span>` : ''}
   </div>`;
 
-  const explainBox = (stat && stat.explain)
-    ? `<div class="ref-explain"><b>หมายเหตุ:</b> ${escapeHtml(stat.explain)}</div>`
-    : '';
-
   if(!stat || !stat.n){
     return `<div class="ref-box">
       ${chips}
-      ${explainBox}
       <span class="ref-chip muted">ยังไม่มีข้อมูลกลุ่มเพียงพอสำหรับข้อนี้</span>
     </div>`;
   }
@@ -667,7 +684,6 @@ function renderReferenceBox(code){
 
   return `<div class="ref-box">
     ${chips}
-    ${explainBox}
     <div class="ref-slider">
       <div class="ref-slider-track">
         <div class="ref-slider-range" style="left:${rangeLeft}%;width:${rangeWidth}%;"></div>
@@ -681,6 +697,15 @@ function renderReferenceBox(code){
       <span class="legend-item"><i class="legend-dot own"></i>คำตอบเดิม</span>
       <span class="legend-item"><i class="legend-bar"></i>Q1–Q3</span>
     </div>
+  </div>`;
+}
+
+function renderCommentBox(code){
+  const stat = GROUP_STATS ? GROUP_STATS[code] : null;
+  if(!stat || stat.pass) return '';
+  return `<div class="ref-comment">
+    <label for="comment_${code}">ข้อคิดเห็นเพิ่มเติมสำหรับข้อนี้ (ยังไม่ถึงฉันทามติในรอบ 2)</label>
+    <textarea id="comment_${code}" name="${code}_comment" placeholder="ระบุเหตุผลหรือความคิดเห็นเพิ่มเติมของท่านสำหรับข้อนี้ (ถ้ามี)"></textarea>
   </div>`;
 }
 
@@ -711,6 +736,7 @@ function buildSections(){
         </div>
         ${renderReferenceBox(item.code)}
         ${renderLikert(item.code, ownVal)}
+        ${renderCommentBox(item.code)}
       `;
       body.appendChild(row);
     });
@@ -755,6 +781,7 @@ function showSurveyUI(username, ownAnswers, groupStats){
   CURRENT_USERNAME = username;
   OWN_ANSWERS = ownAnswers || {};
   GROUP_STATS = groupStats || {};
+  ORDERED_KEYS = buildOrderedKeys();
 
   buildSections();
   updateProgress();
@@ -839,6 +866,8 @@ function collectAnswers(){
     sec.items.forEach(item=>{
       const checked = document.querySelector(`input[name="${item.code}"]:checked`);
       answers[item.code] = checked ? checked.value : '';
+      const commentEl = document.getElementById('comment_' + item.code);
+      if(commentEl) answers[item.code + '_comment'] = commentEl.value.trim();
     });
   });
 
