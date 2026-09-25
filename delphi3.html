@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบสอบถามเทคนิคเดลฟาย รอบที่ 3</title>
+<style>
+  :root{
+    --green-900:#0b3d24;
+    --green-800:#12522f;
+    --green-700:#1b6e3d;
+    --green-600:#238a4e;
+    --green-100:#e9f5ec;
+    --bg:#f4f8f5;
+    --card:#ffffff;
+    --border:#dbe7de;
+    --text:#1f2b23;
+    --text-soft:#5a6d60;
+    --sub-bg:#f4faf6;
+    --ok:#1b6e3d;
+    --ok-bg:#e6f4ea;
+    --warn:#b45309;
+    --warn-bg:#fdf2e3;
+    --danger:#c0392b;
+    /* 5-level sequential green rating scale */
+    --l1-bg:#eef6f0; --l1-text:#2f6b46; --l1-border:#cfe3d5;
+    --l2-bg:#bfe0c9; --l2-text:#1f5c3a; --l2-border:#a9d3b6;
+    --l3-bg:#8dc99e; --l3-text:#153f28; --l3-border:#74ba89;
+    --l4-bg:#4f9f68; --l4-text:#ffffff; --l4-border:#3f8a56;
+    --l5-bg:#1b6e3d; --l5-text:#ffffff; --l5-border:#0b3d24;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sarabun','Leelawadee UI','Segoe UI',Tahoma,Arial,sans-serif;
+    line-height:1.6;
+    padding-bottom:80px;
+  }
+  header.hero{
+    background:linear-gradient(135deg,var(--green-800) 0%,var(--green-900) 100%);
+    color:#fff;
+    padding:36px 20px 28px;
+    text-align:center;
+  }
+  header.hero .kicker{
+    letter-spacing:.12em;font-size:.78rem;text-transform:uppercase;
+    color:#cfe9d8;opacity:.9;margin-bottom:8px;
+  }
+  header.hero h1{font-size:1.5rem;margin:0 0 10px;font-weight:700;}
+  header.hero p{max-width:820px;margin:0 auto;color:#dcefe2;font-size:.95rem;}
+
+  .navbar{
+    position:sticky;top:0;z-index:50;background:#fff;
+    border-bottom:1px solid var(--border);box-shadow:0 2px 6px rgba(11,61,36,.08);
+  }
+  .navbar-inner{
+    max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;
+  }
+  .nav-links{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;}
+  .nav-links::-webkit-scrollbar{display:none;}
+  .nav-links a{
+    white-space:nowrap;text-decoration:none;color:var(--green-800);font-size:.82rem;font-weight:600;
+    padding:7px 12px;border-radius:999px;background:var(--sub-bg);border:1px solid var(--border);
+  }
+  .nav-links a:hover{background:var(--green-100);}
+  .progress-wrap{min-width:150px;text-align:right;}
+  .progress-label{font-size:.72rem;color:var(--text-soft);margin-bottom:3px;}
+  .progress-bar{width:150px;height:8px;background:var(--border);border-radius:999px;overflow:hidden;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-600),var(--green-800));transition:width .25s ease;}
+  main{max-width:960px;margin:0 auto;padding:24px 16px 40px;}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:22px 22px 26px;margin-bottom:22px;box-shadow:0 1px 3px rgba(11,61,36,.06);
+  }
+  .card h2{font-size:1.15rem;color:var(--green-800);margin:0 0 6px;display:flex;align-items:center;gap:10px;}
+  .instructions{font-size:.92rem;}
+  .instructions ol{padding-left:1.2em;}
+  .instructions li{margin-bottom:6px;}
+  .scale-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .scale-legend .chip{
+    border-radius:8px;padding:9px 12px;font-size:.82rem;flex:1 1 150px;
+    text-align:center;font-weight:600;border:1px solid transparent;
+  }
+  .scale-legend .chip b{font-size:1rem;margin-right:4px;}
+  .chip.l1{background:var(--l1-bg);color:var(--l1-text);border-color:var(--l1-border);}
+  .chip.l2{background:var(--l2-bg);color:var(--l2-text);border-color:var(--l2-border);}
+  .chip.l3{background:var(--l3-bg);color:var(--l3-text);border-color:var(--l3-border);}
+  .chip.l4{background:var(--l4-bg);color:var(--l4-text);border-color:var(--l4-border);}
+  .chip.l5{background:var(--l5-bg);color:var(--l5-text);border-color:var(--l5-border);}
+
+  .r2-legend{
+    display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+    background:var(--sub-bg);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;margin-top:14px;font-size:.8rem;color:var(--text-soft);
+  }
+  .r2-legend .lg-item{display:flex;align-items:center;gap:6px;}
+  .r2-legend .lg-swatch{width:22px;height:6px;border-radius:3px;background:var(--green-600);display:inline-block;}
+  .r2-legend .lg-dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);}
+  .r2-legend .lg-dot.yes{background:var(--green-800);}
+  .r2-legend .lg-dot.no{background:var(--warn);}
+
+  /* Accordion (domains) */
+  details.section-acc{
+    border:1px solid var(--border);border-radius:14px;background:var(--card);
+    margin-bottom:18px;overflow:hidden;
+  }
+  details.section-acc[open]{box-shadow:0 1px 3px rgba(11,61,36,.06);}
+  details.section-acc summary{
+    list-style:none;cursor:pointer;padding:16px 20px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(135deg,#eef6f0,#ffffff);
+  }
+  details.section-acc summary::-webkit-details-marker{display:none;}
+  details.section-acc summary h2{margin:0;font-size:1.08rem;color:var(--green-800);}
+  details.section-acc summary .count-pill{
+    font-size:.75rem;background:var(--green-800);color:#fff;padding:4px 10px;border-radius:999px;white-space:nowrap;
+  }
+  details.section-acc summary .chev{transition:transform .2s ease;color:var(--green-800);margin-left:10px;}
+  details.section-acc[open] summary .chev{transform:rotate(180deg);}
+  .section-body{padding:6px 20px 20px;}
+
+  .component-title{
+    font-size:.9rem;font-weight:700;color:var(--green-700);
+    margin:18px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--green-100);
+  }
+  .component-title:first-child{margin-top:6px;}
+
+  /* Item rows */
+  .item{border-top:1px solid var(--border);padding:16px 0;}
+  .item:first-child{border-top:none;}
+  .item-header{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+  .badge{
+    flex:0 0 auto;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:6px;
+    color:#fff;background:var(--green-700);margin-top:2px;min-width:28px;text-align:center;
+  }
+  .item-text{margin:0;font-size:.93rem;color:var(--text);}
+
+  /* Round-2 feedback block */
+  .r2-feedback{
+    background:var(--sub-bg);border:1px solid var(--border);border-radius:10px;
+    padding:10px 14px 12px;margin:0 0 12px 38px;
+  }
+  .r2-fb-label{font-size:.7rem;color:var(--text-soft);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;}
+  .r2-fb-badges{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+  .r2-badge{
+    font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;
+    background:var(--green-100);color:var(--green-800);border:1px solid var(--border);white-space:nowrap;
+  }
+  .r2-badge b{font-weight:800;}
+  .r2-badge.consensus-yes{background:var(--ok-bg);color:var(--green-800);border-color:#bfe0c9;}
+  .r2-badge.consensus-no{background:var(--warn-bg);color:var(--warn);border-color:#f3dcae;}
+  .r2-chart svg{display:block;max-width:280px;}
+  .r2-chart-empty{font-size:.78rem;color:var(--text-soft);font-style:italic;}
+
+  .likert-row-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:38px;}
+  .likert{display:flex;align-items:center;gap:8px;justify-content:flex-start;}
+  .likert-opt{position:relative;cursor:pointer;}
+  .likert-opt input[type=radio]{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .likert-opt .pill{
+    display:flex;align-items:center;justify-content:center;
+    width:42px;height:42px;border-radius:10px;font-weight:700;font-size:.95rem;
+    border:1px solid transparent;transition:transform .12s ease,box-shadow .12s ease;
+    user-select:none;
+  }
+  .likert-opt.v1 .pill{background:var(--l1-bg);color:var(--l1-text);border-color:var(--l1-border);}
+  .likert-opt.v2 .pill{background:var(--l2-bg);color:var(--l2-text);border-color:var(--l2-border);}
+  .likert-opt.v3 .pill{background:var(--l3-bg);color:var(--l3-text);border-color:var(--l3-border);}
+  .likert-opt.v4 .pill{background:var(--l4-bg);color:var(--l4-text);border-color:var(--l4-border);}
+  .likert-opt.v5 .pill{background:var(--l5-bg);color:var(--l5-text);border-color:var(--l5-border);}
+  .likert-opt:hover .pill{transform:translateY(-2px);box-shadow:0 3px 8px rgba(11,61,36,.18);}
+  .likert-opt input:checked + .pill{
+    outline:3px solid var(--green-900);outline-offset:2px;transform:scale(1.08);
+    box-shadow:0 3px 10px rgba(11,61,36,.3);
+  }
+  .likert-endcap{font-size:.72rem;color:var(--text-soft);max-width:76px;text-align:center;}
+
+  textarea{
+    width:100%;min-height:110px;padding:12px;border:1px solid var(--border);border-radius:8px;
+    font-family:inherit;font-size:.9rem;resize:vertical;
+  }
+  textarea:focus{outline:2px solid var(--green-600);border-color:var(--green-600);}
+
+  .submit-bar{max-width:960px;margin:0 auto;padding:0 16px 40px;text-align:center;}
+  button.submit-btn{
+    background:var(--green-800);color:#fff;border:none;padding:14px 40px;font-size:1rem;font-weight:700;
+    border-radius:999px;cursor:pointer;font-family:inherit;box-shadow:0 4px 10px rgba(11,61,36,.3);
+  }
+  button.submit-btn:disabled{opacity:.6;cursor:wait;}
+  button.submit-btn:hover:not(:disabled){background:var(--green-900);}
+  .submit-note{font-size:.8rem;color:var(--text-soft);margin-top:10px;}
+
+  .thankyou{
+    display:none;max-width:640px;margin:60px auto;text-align:center;background:var(--card);
+    border:1px solid var(--border);border-radius:16px;padding:44px 30px;
+  }
+  .thankyou h2{color:var(--green-800);}
+  .thankyou .ok-icon{
+    width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;
+  }
+
+  /* Login gate */
+  .login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--green-800) 0%,var(--green-900) 100%);padding:20px;
+  }
+  .login-card{
+    background:#fff;border-radius:16px;padding:36px 32px;max-width:420px;width:100%;
+    text-align:center;box-shadow:0 10px 30px rgba(11,61,36,.35);
+  }
+  .login-kicker{
+    letter-spacing:.12em;font-size:.72rem;text-transform:uppercase;
+    color:var(--green-700);font-weight:700;margin-bottom:10px;
+  }
+  .login-card h1{font-size:1.25rem;color:var(--green-800);margin:0 0 10px;}
+  .login-card p{font-size:.88rem;color:var(--text-soft);margin:0 0 20px;}
+  #loginForm input[type=text]{
+    width:100%;text-align:center;font-size:1rem;letter-spacing:.03em;padding:12px;margin-bottom:14px;
+    border:1px solid var(--border);border-radius:8px;font-family:inherit;
+  }
+  #loginForm input[type=text]:focus{outline:2px solid var(--green-600);border-color:var(--green-600);}
+  .login-btn{
+    width:100%;background:var(--green-800);color:#fff;border:none;padding:13px;
+    font-size:1rem;font-weight:700;border-radius:10px;cursor:pointer;font-family:inherit;
+  }
+  .login-btn:hover{background:var(--green-900);}
+  .login-error{
+    display:none;color:var(--danger);font-size:.85rem;margin-top:14px;
+    background:#fdecea;border:1px solid #f5c6c2;border-radius:8px;padding:8px 10px;
+  }
+  .login-error.show{display:block;}
+
+  .expert-badge{
+    max-width:960px;margin:0 auto;padding:10px 16px 0;
+    font-size:.8rem;color:var(--text-soft);text-align:right;
+  }
+  .expert-badge b{color:var(--green-800);}
+
+  .loading-note{
+    text-align:center;padding:60px 20px;color:var(--text-soft);font-size:.92rem;
+  }
+
+  @media (max-width:600px){
+    .likert-opt .pill{width:38px;height:38px;font-size:.88rem;}
+    header.hero h1{font-size:1.2rem;}
+    .likert-endcap{display:none;}
+    .r2-feedback,.likert-row-wrap{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-kicker">Air Pollution Control Competency Survey</div>
+    <h1>ยืนยันตัวตนผู้เชี่ยวชาญ</h1>
+    <p>กรุณากรอกรหัสผู้เชี่ยวชาญที่ได้รับ (เช่น air01) เพื่อเข้าสู่แบบสอบถามเทคนิคเดลฟาย รอบที่ 3 เรื่อง การพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล</p>
+    <form id="loginForm" autocomplete="off">
+      <input type="text" id="expertCodeInput" name="expertCodeInput" placeholder="กรอกรหัสผู้เชี่ยวชาญ เช่น air01" autocomplete="off">
+      <button type="submit" class="login-btn">เข้าสู่แบบสอบถาม</button>
+      <div class="login-error" id="loginError">รหัสผู้เชี่ยวชาญไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง</div>
+    </form>
+  </div>
+</div>
+
+<div class="survey-app" id="surveyApp" style="display:none;">
+
+<div class="expert-badge" id="expertBadge"></div>
+
+<header class="hero">
+  <div class="kicker">Air Pollution Control Competency Survey · Delphi Round 3</div>
+  <h1>แบบสอบถามเทคนิคเดลฟาย รอบที่ 3</h1>
+  <p>เรื่อง การพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล<br>
+  วิจัยโดย นายอนุรักษ์ รุ่งเรือง นักศึกษาหลักสูตรบริหารธุรกิจระดับดุษฎีบัณฑิต สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์<br>
+  คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
+</header>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <div class="nav-links">
+      <a href="#sec-K">ด้านความรู้</a>
+      <a href="#sec-S">ด้านทักษะ</a>
+      <a href="#sec-A">ด้านคุณลักษณะ</a>
+      <a href="#part3">ส่วนที่ 3</a>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label" id="progressLabel">ตอบแล้ว 0 / 70 ข้อ</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="card" id="intro">
+    <h2>คำชี้แจง (รอบที่ 3)</h2>
+    <div class="instructions">
+      <p>แบบสอบถามฉบับนี้เป็นการเก็บข้อมูลรอบที่ 3 ตามเทคนิคเดลฟาย (Delphi Technique) โดยนำผลสรุปค่ามัธยฐาน (Median) และค่าพิสัยระหว่างควอไทล์ (IQR) จากคำตอบของผู้เชี่ยวชาญทุกท่านในรอบที่ 2 มาแสดงประกอบแต่ละข้อคำถาม เพื่อให้ท่านพิจารณาทบทวนคำตอบของท่านอีกครั้งเทียบกับความคิดเห็นโดยรวมของกลุ่ม ท่านสามารถให้คะแนนเหมือนเดิมหรือปรับเปลี่ยนตามดุลยพินิจของท่านได้อย่างอิสระ</p>
+      <ol>
+        <li>ในรอบนี้ไม่ต้องกรอกข้อมูลทั่วไปซ้ำอีก (ใช้รหัสผู้เชี่ยวชาญที่ล็อกอินอ้างอิงกับข้อมูลรอบก่อนหน้าแทน)</li>
+        <li>โปรดพิจารณาผลรอบที่ 2 (Median / IQR) ที่แสดงเหนือแต่ละข้อ แล้วให้คะแนนระดับความคิดเห็นของท่านโดยใช้มาตรวัดแบบลิเคิร์ท (Likert Scale) 5 ระดับเช่นเดิม</li>
+        <li>กรุณาตอบทุกข้อให้ครบถ้วน และสามารถระบุข้อคิดเห็น/ข้อเสนอแนะเพิ่มเติมได้ในส่วนที่ 3 ท้ายแบบสอบถาม</li>
+      </ol>
+      <div class="scale-legend">
+        <div class="chip l5"><b>5</b> เห็นด้วยมากที่สุด</div>
+        <div class="chip l4"><b>4</b> เห็นด้วยมาก</div>
+        <div class="chip l3"><b>3</b> เห็นด้วยปานกลาง</div>
+        <div class="chip l2"><b>2</b> เห็นด้วยน้อย</div>
+        <div class="chip l1"><b>1</b> เห็นด้วยน้อยที่สุด</div>
+      </div>
+      <div class="r2-legend">
+        <div class="lg-item"><span class="lg-swatch"></span> ช่วง Q1–Q3 (IQR) ของคำตอบรอบที่ 2</div>
+        <div class="lg-item"><span class="lg-dot yes"></span> จุด Median (สีเขียวเข้ม = มีฉันทามติ, IQR &le; 1)</div>
+        <div class="lg-item"><span class="lg-dot no"></span> จุด Median (สีส้ม = ยังไม่มีฉันทามติ, IQR &gt; 1)</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingNote" class="loading-note">กำลังโหลดผลสรุปรอบที่ 2 ...</div>
+  <div id="sectionsContainer"></div>
+
+  <div class="card" id="part3" style="display:none;">
+    <h2>ส่วนที่ 3 &nbsp;ข้อคิดเห็นและข้อเสนอแนะเพิ่มเติม</h2>
+    <p class="instructions">หากท่านมีข้อเสนอแนะเพิ่มเติมเกี่ยวกับการพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล กรุณาระบุด้านล่างนี้</p>
+    <textarea id="suggestion" name="suggestion" placeholder="ระบุข้อเสนอแนะเพิ่มเติม (ถ้ามี)"></textarea>
+  </div>
+
+</main>
+
+<div class="submit-bar" id="submitBar" style="display:none;">
+  <button class="submit-btn" id="submitBtn" type="button">ส่งแบบสอบถามรอบที่ 3</button>
+  <div class="submit-note">กรุณาตอบข้อคำถามให้ครบทุกข้อก่อนกดส่งแบบสอบถาม</div>
+</div>
+
+<div class="thankyou" id="thankyou">
+  <div class="ok-icon">&#10003;</div>
+  <h2>ขอบพระคุณสำหรับความร่วมมือ</h2>
+  <p>ผู้วิจัยขอขอบพระคุณท่านที่กรุณาสละเวลาตอบแบบสอบถามรอบที่ 3 ในครั้งนี้ ข้อมูลของท่านมีคุณค่าอย่างยิ่งต่อการพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล</p>
+  <p style="color:var(--text-soft);font-size:.85rem;" id="thankyouExpertCode"></p>
+  <p style="color:var(--text-soft);font-size:.85rem;">นายอนุรักษ์ รุ่งเรือง &nbsp;|&nbsp; ผู้วิจัย &nbsp;|&nbsp; anurak.r@ited.kmutnb.ac.th</p>
+</div>
+
+</div><!-- /#surveyApp -->
+
+<script>
+/* ============================================================
+   ล็อกอินด้วยรหัสผู้เชี่ยวชาญ (air01 - air21) — เหมือนรอบที่ 2
+   ============================================================ */
+const VALID_EXPERT_CODES = Array.from({length:21}, (_, i) => 'air' + String(i+1).padStart(2,'0'));
+const SESSION_KEY = 'delphi3_expert_code';
+let CURRENT_EXPERT_CODE = '';
+
+function normalizeCode(raw){
+  return (raw || '').trim().toLowerCase();
+}
+
+function enterSurvey(code){
+  CURRENT_EXPERT_CODE = code;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('surveyApp').style.display = 'block';
+  document.getElementById('expertBadge').innerHTML = 'รหัสผู้เชี่ยวชาญ: <b>' + code + '</b>';
+  window.scrollTo({top:0});
+  loadRound2StatsAndBuild();
+}
+
+document.getElementById('loginForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const input = document.getElementById('expertCodeInput');
+  const code = normalizeCode(input.value);
+  const errorBox = document.getElementById('loginError');
+
+  if(VALID_EXPERT_CODES.includes(code)){
+    errorBox.classList.remove('show');
+    sessionStorage.setItem(SESSION_KEY, code);
+    enterSurvey(code);
+  } else {
+    errorBox.classList.add('show');
+  }
+});
+
+(function tryAutoLogin(){
+  const saved = normalizeCode(sessionStorage.getItem(SESSION_KEY));
+  if(VALID_EXPERT_CODES.includes(saved)){
+    enterSurvey(saved);
+  }
+})();
+
+/* ============================================================
+   การเชื่อมต่อ Google Sheet ผ่าน Google Apps Script
+   หน้านี้ต้องถูก serve โดย Apps Script โดยตรง (google.script.run) เท่านั้น
+   ไม่รองรับการเปิดเป็นไฟล์ static แยกต่างหากเหมือนหน้าอื่น เนื่องจากต้องอ่าน
+   ผลสรุปรอบ 2 จากชีต "stat2" แบบเรียลไทม์ผ่าน delphi3.gs
+   ============================================================ */
+function gasRun(fnName, ...args){
+  return new Promise((resolve, reject)=>{
+    if(typeof google === 'undefined' || !google.script || !google.script.run){
+      reject(new Error('หน้านี้ต้องเปิดผ่าน Web app URL ของ Apps Script เท่านั้น (google.script.run ใช้ไม่ได้เมื่อเปิดไฟล์ในเครื่องโดยตรง)'));
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)
+      [fnName](...args);
+  });
+}
+
+const DOMAINS = [
+  {
+    key:'K',
+    title:'สมรรถนะหลักที่ 1 ด้านความรู้ (Knowledge)',
+    components:[
+      {code:'1.1',title:'ความรู้พื้นฐานด้านมลพิษอากาศและผลกระทบต่อสิ่งแวดล้อม',items:[
+        {num:1,text:'มีความรู้เกี่ยวกับสถานการณ์มลพิษอากาศในปัจจุบันและผลกระทบที่เกี่ยวข้อง'},
+        {num:2,text:'มีความรู้เกี่ยวกับประเภทและแหล่งกำเนิดของมลพิษอากาศ ตลอดจนหลักการป้องกันมลพิษอากาศเบื้องต้น'},
+        {num:3,text:'มีความรู้เกี่ยวกับองค์ประกอบคุณสมบัติทางกายภาพและทางเคมีของมลพิษอากาศแต่ละประเภท'}
+      ]},
+      {code:'1.2',title:'ความรู้ด้านกฎหมาย มาตรฐาน และการรายงานตามข้อกำหนด',items:[
+        {num:4,text:'มีความรู้เกี่ยวกับกฎหมายควบคุมมลพิษทางอากาศของโรงงานอุตสาหกรรมในประเทศไทย'},
+        {num:5,text:'มีความรู้เกี่ยวกับหลักเกณฑ์การจำแนกชนิดและขนาดของโรงงานตามประกาศกระทรวงอุตสาหกรรม'},
+        {num:6,text:'มีความรู้เกี่ยวกับการจัดทำรายงานการตรวจสอบและควบคุมกำกับดูแลการทำงานของระบบบำบัดมลพิษอากาศ'},
+        {num:7,text:'มีความรู้เกี่ยวกับการจัดทำรายงานผลการวิเคราะห์ปริมาณสารมลพิษอากาศตามหลักเกณฑ์และวิธีการที่กรมโรงงานอุตสาหกรรมกำหนด'}
+      ]},
+      {code:'1.3',title:'ความรู้ด้านกระบวนการผลิตและการวิเคราะห์แหล่งกำเนิดมลพิษ',items:[
+        {num:8,text:'มีความรู้เกี่ยวกับแนวทางการลดมลพิษอากาศตั้งแต่แหล่งกำเนิดในกระบวนการผลิต'},
+        {num:9,text:'มีความรู้เกี่ยวกับผังกระบวนการผลิตและจุดที่มีโอกาสก่อให้เกิดมลพิษอากาศในแต่ละขั้นตอน'},
+        {num:10,text:'มีความรู้เกี่ยวกับการตรวจสอบชนิดและประเภทของเชื้อเพลิงและวัตถุดิบที่ใช้ในกระบวนการผลิตของโรงงาน'},
+        {num:11,text:'มีความรู้เกี่ยวกับความสัมพันธ์ระหว่างการเปลี่ยนแปลงวัตถุดิบหรือเชื้อเพลิงกับปริมาณและชนิดของมลพิษอากาศที่เกิดขึ้น'},
+        {num:12,text:'มีความรู้เกี่ยวกับการประเมินปริมาณการปล่อยมลพิษอากาศจากกระบวนการผลิต (Emission Estimation)'},
+        {num:13,text:'มีความรู้เกี่ยวกับหลักสมดุลมวลสาร สมดุลพลังงาน และสมดุลสารเคมี เพื่อใช้ประเมินแหล่งกำเนิด ปริมาณมลพิษอากาศ และภาระมลพิษที่เข้าสู่ระบบบำบัดมลพิษอากาศของโรงงาน'}
+      ]},
+      {code:'1.4',title:'ความรู้ด้านการจัดการ บำบัด และควบคุมระบบบำบัดมลพิษอากาศ',items:[
+        {num:14,text:'มีความรู้เกี่ยวกับหลักการจัดการ การบำบัด และการควบคุมระบบบำบัดมลพิษอากาศตามมาตรฐานสิ่งแวดล้อม'},
+        {num:15,text:'มีความรู้เกี่ยวกับวิธีการบำบัดมลพิษอากาศทั้งทางกายภาพ ทางเคมี และทางชีวภาพ'},
+        {num:16,text:'มีความรู้เกี่ยวกับหลักการเทคโนโลยีสะอาดและการบริหารจัดการระบบบำบัดมลพิษอากาศ'},
+        {num:17,text:'มีความรู้เกี่ยวกับแนวทางการบริหารจัดการมลพิษอากาศอย่างเป็นระบบและต่อเนื่อง'},
+        {num:18,text:'มีความรู้เกี่ยวกับเทคนิคการควบคุมระบบบำบัดหรือกำจัดมลพิษอากาศ'},
+        {num:19,text:'มีความรู้เกี่ยวกับเครื่องจักรและอุปกรณ์ของระบบบำบัดมลพิษอากาศในโรงงาน'},
+        {num:20,text:'มีความรู้เกี่ยวกับหลักการบำรุงรักษาเชิงป้องกันของเครื่องจักรและอุปกรณ์ในระบบบำบัดมลพิษอากาศ'}
+      ]},
+      {code:'1.5',title:'ความรู้ด้านการประเมินความเสี่ยงและเทคโนโลยีดิจิทัล',items:[
+        {num:21,text:'มีความรู้เกี่ยวกับการประเมินลักษณะของมลพิษอากาศและการตรวจสอบประสิทธิภาพของระบบบำบัดมลพิษอากาศ'},
+        {num:22,text:'มีความรู้เกี่ยวกับการวิเคราะห์และจัดการปัญหาที่เกิดขึ้นกับระบบบำบัดมลพิษอากาศ'},
+        {num:23,text:'มีความรู้เกี่ยวกับการเก็บตัวอย่างและการวิเคราะห์คุณภาพอากาศ'},
+        {num:24,text:'มีความรู้เกี่ยวกับการประเมินและการบริหารจัดการความเสี่ยงด้านมลพิษอากาศในโรงงาน'},
+        {num:25,text:'มีความรู้เกี่ยวกับการประยุกต์ใช้เทคโนโลยีดิจิทัล เช่น อินเทอร์เน็ตของสรรพสิ่ง (IoT) และปัญญาประดิษฐ์ (AI) ในระบบบำบัดมลพิษอากาศ'},
+        {num:26,text:'มีความรู้เกี่ยวกับระบบตรวจวัดมลพิษอากาศ CEMS (Continuous Emission Monitoring System) ของกรมโรงงานอุตสาหกรรม'}
+      ]},
+      {code:'1.6',title:'ความรู้ด้านการวางแผนงานและความปลอดภัย',items:[
+        {num:27,text:'มีความรู้เกี่ยวกับการจัดทำแผนงานและพัฒนาแนวทางแก้ไขปัญหาของระบบบำบัดมลพิษอากาศ'},
+        {num:28,text:'มีความรู้เกี่ยวกับการจัดทำแผนฉุกเฉินและแนวทางตอบโต้เหตุการณ์ผิดปกติของระบบบำบัดมลพิษอากาศ'},
+        {num:29,text:'มีความรู้เกี่ยวกับความปลอดภัย อาชีวอนามัย และสิ่งแวดล้อมที่เกี่ยวข้องกับการปฏิบัติงานของระบบบำบัดมลพิษอากาศ'},
+        {num:30,text:'มีความรู้เกี่ยวกับมาตรฐานความปลอดภัยในการทำงานกับสารเคมีและก๊าซอันตรายที่เกี่ยวข้องกับระบบบำบัดมลพิษอากาศ'}
+      ]}
+    ]
+  },
+  {
+    key:'S',
+    title:'สมรรถนะหลักที่ 2 ด้านทักษะ (Skill)',
+    components:[
+      {code:'2.1',title:'ทักษะด้านการตรวจสอบ วิเคราะห์ และตีความข้อมูล',items:[
+        {num:31,text:'สามารถอ่าน วิเคราะห์ และตีความข้อมูลจากเครื่องมือหรือระบบตรวจวัดมลพิษอากาศได้อย่างถูกต้อง'},
+        {num:32,text:'สามารถเก็บตัวอย่างและวิเคราะห์คุณภาพอากาศได้'},
+        {num:33,text:'สามารถตรวจสอบชนิดและประเภทของเชื้อเพลิงและวัตถุดิบที่ใช้ในกระบวนการผลิตของโรงงานได้'},
+        {num:34,text:'สามารถประเมินลักษณะของมลพิษอากาศ และตรวจสอบประสิทธิภาพของระบบป้องกันและบำบัดมลพิษอากาศของโรงงานได้'}
+      ]},
+      {code:'2.2',title:'ทักษะด้านการวิเคราะห์ปัญหา การแก้ไขระบบ และเทคโนโลยีดิจิทัล',items:[
+        {num:35,text:'สามารถวิเคราะห์กระบวนการผลิตและความคุ้มค่า พร้อมทั้งเสนอแนวทางลดมลพิษอากาศในโรงงานได้'},
+        {num:36,text:'สามารถประยุกต์ใช้หลักการเทคโนโลยีการผลิตที่สะอาด (Cleaner Technology) เพื่อลดปริมาณมลพิษอากาศจากแหล่งกำเนิดในกระบวนการผลิตได้'},
+        {num:37,text:'สามารถวิเคราะห์ปัญหาและให้ข้อเสนอแนะเพื่อแก้ไขหรือปรับปรุงการจัดการระบบบำบัดมลพิษอากาศได้อย่างเหมาะสม'},
+        {num:38,text:'สามารถวิเคราะห์สาเหตุของความผิดปกติของระบบบำบัดมลพิษอากาศ และกำหนดแนวทางแก้ไขได้อย่างเป็นขั้นตอน'},
+        {num:39,text:'สามารถประยุกต์ใช้เทคโนโลยีดิจิทัล เช่น อินเทอร์เน็ตของสรรพสิ่ง (IoT) และปัญญาประดิษฐ์ (AI) ในระบบบำบัดมลพิษอากาศได้'},
+        {num:40,text:'สามารถอ่านค่าแนวโน้ม (Trend) และตรวจสอบสัญญาณเตือน (Alarm) จากระบบดิจิทัลเพื่อคาดการณ์และป้องกันความผิดปกติของระบบล่วงหน้าได้'},
+        {num:41,text:'สามารถวิเคราะห์สาเหตุของความบกพร่องในระบบบำบัดมลพิษอากาศจากข้อมูลการเดินระบบ สภาพเครื่องจักร อุปกรณ์ และกระบวนการผลิต เพื่อกำหนดแนวทางแก้ไขหรือปรับปรุงระบบได้อย่างเหมาะสม'}
+      ]},
+      {code:'2.3',title:'ทักษะด้านการจัดทำรายงานและการวางแผนปฏิบัติงาน',items:[
+        {num:42,text:'สามารถวิเคราะห์มลพิษอากาศ ตามหลักเกณฑ์ที่กรมโรงงานอุตสาหกรรมกำหนดได้'},
+        {num:43,text:'สามารถตรวจสอบและลงนามรับรองรายงานผลการวิเคราะห์มลพิษอากาศตามที่กฎหมายกำหนดได้'},
+        {num:44,text:'สามารถจัดทำแผนการปฏิบัติงานของระบบบำบัดมลพิษอากาศได้'},
+        {num:45,text:'สามารถวางแผนบำรุงรักษาเชิงป้องกันเครื่องจักรและอุปกรณ์ของระบบบำบัดมลพิษอากาศได้'},
+        {num:46,text:'สามารถวางแผนและจัดสรรทรัพยากรบุคคล งบประมาณ และเวลา สำหรับการดำเนินงานของระบบบำบัดมลพิษอากาศได้'},
+        {num:47,text:'สามารถจัดทำแผนรองรับสถานการณ์ฉุกเฉินของระบบบำบัดมลพิษอากาศได้'}
+      ]},
+      {code:'2.4',title:'ทักษะด้านการถ่ายทอดความรู้และพัฒนาบุคลากร',items:[
+        {num:48,text:'สามารถถ่ายทอดความรู้หรือฝึกอบรมผู้ปฏิบัติงานเกี่ยวกับระบบบำบัดมลพิษอากาศได้'},
+        {num:49,text:'สามารถจัดทำคู่มือปฏิบัติงานสำหรับผู้ปฏิบัติประจำระบบบำบัดมลพิษอากาศได้'},
+        {num:50,text:'สามารถให้คำปรึกษาแนะนำผู้ปฏิบัติงานรุ่นใหม่ในการควบคุมระบบบำบัดมลพิษอากาศได้'}
+      ]}
+    ]
+  },
+  {
+    key:'A',
+    title:'สมรรถนะหลักที่ 3 ด้านคุณลักษณะที่พึงประสงค์ (Attribute)',
+    components:[
+      {code:'3.1',title:'จิตสำนึกความรับผิดชอบและคุณธรรมจรรยาบรรณ',items:[
+        {num:51,text:'มีจิตสำนึกด้านสิ่งแวดล้อมและความปลอดภัยในการปฏิบัติงาน และให้ความสำคัญกับการป้องกันมลพิษอากาศอย่างต่อเนื่อง'},
+        {num:52,text:'มีความรับผิดชอบต่องานที่ได้รับมอบหมายเป็นอย่างดี'},
+        {num:53,text:'มีระเบียบวินัยและปฏิบัติตามกฎระเบียบขององค์กร'},
+        {num:54,text:'มีความรอบคอบในการใช้ข้อมูลและรายงานผลการตรวจวัดโดยยึดหลักความถูกต้องและความโปร่งใส'},
+        {num:55,text:'มีความน่าเชื่อถือและเป็นที่ไว้วางใจของผู้บังคับบัญชาและผู้ร่วมงาน'},
+        {num:56,text:'มีจรรยาบรรณในการปฏิบัติงานต่อหน้าที่และงานที่ได้รับมอบหมาย'}
+      ]},
+      {code:'3.2',title:'การคิดวิเคราะห์ การแก้ปัญหา และการตัดสินใจ',items:[
+        {num:57,text:'สามารถแก้ไขปัญหาที่เกิดขึ้นในงานได้'},
+        {num:58,text:'มีความละเอียดรอบคอบในการปฏิบัติงานและกระบวนการทำงานโดยรวม'},
+        {num:59,text:'สามารถตัดสินใจภายใต้สถานการณ์ที่ไม่ชัดเจนและซับซ้อนได้'},
+        {num:60,text:'สามารถปฏิบัติงานให้บรรลุผลสัมฤทธิ์ได้'}
+      ]},
+      {code:'3.3',title:'การสื่อสาร การทำงานร่วมกับผู้อื่น และการเรียนรู้ปรับตัว',items:[
+        {num:61,text:'มีภาวะผู้นำที่ดี'},
+        {num:62,text:'มีมนุษยสัมพันธ์ที่ดีและสามารถทำงานร่วมกับเพื่อนร่วมงานได้อย่างราบรื่น'},
+        {num:63,text:'สามารถทำงานร่วมกับผู้อื่นที่มีความคิดเห็นแตกต่างได้อย่างสร้างสรรค์'},
+        {num:64,text:'มีความคิดริเริ่มสร้างสรรค์ และสามารถนำเสนอแนวคิดหรือแนวทางใหม่ที่เป็นประโยชน์ต่อการพัฒนางานและองค์กร'},
+        {num:65,text:'มีความพร้อมในการเรียนรู้และปรับตัวต่อเทคโนโลยีใหม่ที่เกี่ยวข้องกับระบบบำบัดมลพิษอากาศ'},
+        {num:66,text:'มีความยืดหยุ่นและสามารถปรับตัวต่อสถานการณ์ต่าง ๆ ได้'}
+      ]},
+      {code:'3.4',title:'การบริหารจัดการงานและวิสัยทัศน์ระยะยาว',items:[
+        {num:67,text:'สามารถจัดลำดับความสำคัญของงานได้อย่างเหมาะสม'},
+        {num:68,text:'มีวิสัยทัศน์ในการวางแผนพัฒนาระบบบำบัดมลพิษอากาศให้สอดคล้องกับทิศทางเทคโนโลยีและกฎหมาย'},
+        {num:69,text:'สามารถบริหารจัดการงานในปัจจุบันโดยคำนึงถึงผลกระทบในระยะยาวได้'},
+        {num:70,text:'ให้ความสำคัญกับการพัฒนางานอย่างต่อเนื่องในการปฏิบัติงาน'}
+      ]}
+    ]
+  }
+];
+
+const ITEMS_FLAT = DOMAINS.flatMap(d => d.components.flatMap(c => c.items));
+const TOTAL_ITEMS = ITEMS_FLAT.length;
+
+let ROUND2_STATS = { hasData:false, items:{} };
+
+function fmtNum(v){
+  return (v === null || v === undefined || v === '') ? '-' : v;
+}
+
+function renderIqrChart(stats){
+  if(!stats || !stats.n){
+    return '<div class="r2-chart-empty">ยังไม่มีข้อมูลสรุปผลรอบ 2 สำหรับข้อนี้</div>';
+  }
+  const W = 280, H = 40;
+  const PAD = 18;
+  const xFor = v => PAD + (v-1)/4 * (W - PAD*2);
+  const q1 = Number(stats.q1), med = Number(stats.median), q3 = Number(stats.q3);
+  const markerColor = stats.consensus ? '#12522f' : '#b45309';
+
+  let ticks = '';
+  for(let v=1; v<=5; v++){
+    ticks += `<line x1="${xFor(v)}" y1="24" x2="${xFor(v)}" y2="28" stroke="#c7d6cc" stroke-width="1"/>`;
+    ticks += `<text x="${xFor(v)}" y="38" font-size="9" fill="#5a6d60" text-anchor="middle">${v}</text>`;
+  }
+
+  return `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="ช่วง IQR รอบ 2: Q1 ${q1}, Median ${med}, Q3 ${q3}">
+      <title>Q1 = ${q1} · Median = ${med} · Q3 = ${q3} · N = ${stats.n}</title>
+      <line x1="${xFor(1)}" y1="15" x2="${xFor(5)}" y2="15" stroke="#dbe7de" stroke-width="3" stroke-linecap="round"/>
+      <line x1="${xFor(q1)}" y1="15" x2="${xFor(q3)}" y2="15" stroke="#238a4e" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="${xFor(med)}" cy="15" r="6" fill="${markerColor}" stroke="#ffffff" stroke-width="2"/>
+      ${ticks}
+    </svg>
+  `;
+}
+
+function renderRound2Feedback(num){
+  const stats = ROUND2_STATS.items[num];
+  const hasStats = stats && stats.n;
+  const consensusClass = hasStats ? (stats.consensus ? 'consensus-yes' : 'consensus-no') : '';
+  const consensusText = hasStats ? (stats.consensus ? 'ฉันทามติ' : 'ยังไม่ฉันทามติ') : '';
+
+  const badges = hasStats ? `
+    <div class="r2-fb-badges">
+      <span class="r2-badge">Median รอบ 2: <b>${fmtNum(stats.median)}</b></span>
+      <span class="r2-badge ${consensusClass}">IQR รอบ 2: <b>${fmtNum(stats.iqr)}</b> (${consensusText})</span>
+      <span class="r2-badge">N = ${fmtNum(stats.n)}</span>
+    </div>
+  ` : '';
+
+  return `
+    <div class="r2-feedback">
+      <div class="r2-fb-label">ผลสรุปรอบที่ 2</div>
+      ${badges}
+      <div class="r2-chart">${renderIqrChart(stats)}</div>
+    </div>
+  `;
+}
+
+function renderLikert(num){
+  let html = '<div class="likert-row-wrap"><span class="likert-endcap">น้อยที่สุด</span><div class="likert">';
+  for(let v=1; v<=5; v++){
+    html += `<label class="likert-opt v${v}"><input type="radio" name="q${num}" value="${v}" data-num="${num}"><span class="pill">${v}</span></label>`;
+  }
+  html += '</div><span class="likert-endcap">มากที่สุด</span></div>';
+  return html;
+}
+
+function buildSections(){
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+  DOMAINS.forEach((dom, idx)=>{
+    const itemCount = dom.components.reduce((s,c)=>s+c.items.length,0);
+    const details = document.createElement('details');
+    details.className = 'section-acc';
+    details.id = 'sec-' + dom.key;
+    if(idx === 0) details.open = true;
+
+    const summary = document.createElement('summary');
+    summary.innerHTML = `<h2>${dom.title}</h2><span style="display:flex;align-items:center;"><span class="count-pill" id="count-${dom.key}">0/${itemCount}</span><span class="chev">&#9660;</span></span>`;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    dom.components.forEach(comp=>{
+      const compTitle = document.createElement('div');
+      compTitle.className = 'component-title';
+      compTitle.textContent = `องค์ประกอบสมรรถนะที่ ${comp.code} ${comp.title}`;
+      body.appendChild(compTitle);
+
+      comp.items.forEach(item=>{
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML = `
+          <div class="item-header">
+            <span class="badge">${item.num}</span>
+            <p class="item-text">${item.text}</p>
+          </div>
+          ${renderRound2Feedback(item.num)}
+          ${renderLikert(item.num)}
+        `;
+        body.appendChild(row);
+      });
+    });
+
+    details.appendChild(body);
+    container.appendChild(details);
+  });
+}
+
+function updateProgress(){
+  let answered = 0;
+  const perDomainCount = {};
+  DOMAINS.forEach(d=> perDomainCount[d.key] = 0);
+
+  DOMAINS.forEach(dom=>{
+    dom.components.forEach(comp=>{
+      comp.items.forEach(item=>{
+        const checked = document.querySelector(`input[name="q${item.num}"]:checked`);
+        if(checked){
+          answered++;
+          perDomainCount[dom.key]++;
+        }
+      });
+    });
+  });
+
+  DOMAINS.forEach(dom=>{
+    const itemCount = dom.components.reduce((s,c)=>s+c.items.length,0);
+    const pill = document.getElementById('count-'+dom.key);
+    if(pill) pill.textContent = perDomainCount[dom.key] + '/' + itemCount;
+  });
+
+  const pct = Math.round((answered/TOTAL_ITEMS)*100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `ตอบแล้ว ${answered} / ${TOTAL_ITEMS} ข้อ (${pct}%)`;
+  return answered;
+}
+
+function loadRound2StatsAndBuild(){
+  document.getElementById('loadingNote').style.display = 'block';
+  gasRun('getRound2StatsForDelphi3')
+    .then((result)=>{
+      ROUND2_STATS = result || { hasData:false, items:{} };
+      document.getElementById('loadingNote').style.display = 'none';
+      document.getElementById('part3').style.display = 'block';
+      document.getElementById('submitBar').style.display = 'block';
+      buildSections();
+      updateProgress();
+      document.getElementById('sectionsContainer').addEventListener('change', (e)=>{
+        if(e.target && e.target.type === 'radio'){
+          updateProgress();
+        }
+      });
+    })
+    .catch((err)=>{
+      document.getElementById('loadingNote').textContent = 'ไม่สามารถโหลดผลสรุปรอบที่ 2 ได้: ' + (err && err.message ? err.message : err);
+    });
+}
+
+function getRadioVal(name){
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+
+function buildPayload(){
+  const payload = {
+    timestamp_client: new Date().toISOString(),
+    expert_code: CURRENT_EXPERT_CODE,
+    suggestion: document.getElementById('suggestion').value.trim()
+  };
+  ITEMS_FLAT.forEach(item=>{
+    payload['q'+item.num] = getRadioVal('q'+item.num);
+  });
+  return payload;
+}
+
+function showThankYou(){
+  document.querySelectorAll('main .card, #sectionsContainer, #loadingNote').forEach(el=> el.style.display='none');
+  document.querySelector('.submit-bar').style.display='none';
+  document.querySelector('.navbar').style.display='none';
+  document.getElementById('thankyouExpertCode').textContent = 'รหัสผู้เชี่ยวชาญ: ' + CURRENT_EXPERT_CODE;
+  document.getElementById('thankyou').style.display='block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('submitBtn').addEventListener('click', ()=>{
+  const answered = updateProgress();
+
+  if(answered < TOTAL_ITEMS){
+    alert(`กรุณาตอบข้อคำถามให้ครบทุกข้อ (ตอบแล้ว ${answered} จาก ${TOTAL_ITEMS} ข้อ)`);
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่งข้อมูล...';
+
+  const payload = buildPayload();
+
+  gasRun('submitDelphi3Response', payload)
+    .then(()=> showThankYou())
+    .catch((err)=>{
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = 'ส่งแบบสอบถามรอบที่ 3';
+      alert('ไม่สามารถส่งข้อมูลได้: ' + (err && err.message ? err.message : err));
+    });
+});
+</script>
+
+</body>
+</html>
