@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปผลข้อมูลและค่าสถิติ (Median / IQR)</title>
+<style>
+  :root{
+    --green-900:#0b3d24;
+    --green-800:#12522f;
+    --green-700:#1b6e3d;
+    --green-600:#238a4e;
+    --green-100:#e9f5ec;
+    --bg:#f4f8f5;
+    --card:#ffffff;
+    --border:#dbe7de;
+    --text:#1f2b23;
+    --text-soft:#5a6d60;
+    --sub-bg:#f4faf6;
+    --ok:#1b6e3d;
+    --ok-bg:#e6f4ea;
+    --warn:#b45309;
+    --warn-bg:#fdf2e3;
+    --danger:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sarabun','Leelawadee UI','Segoe UI',Tahoma,Arial,sans-serif;
+    line-height:1.6;
+    padding-bottom:80px;
+  }
+  header.hero{
+    background:linear-gradient(135deg,var(--green-800) 0%,var(--green-900) 100%);
+    color:#fff;
+    padding:32px 20px 26px;
+    text-align:center;
+  }
+  header.hero .kicker{
+    letter-spacing:.12em;font-size:.78rem;text-transform:uppercase;
+    color:#cfe9d8;opacity:.9;margin-bottom:8px;
+  }
+  header.hero h1{font-size:1.4rem;margin:0 0 8px;font-weight:700;}
+  header.hero p{max-width:820px;margin:0 auto;color:#dcefe2;font-size:.92rem;}
+
+  main{max-width:1080px;margin:0 auto;padding:24px 16px 40px;}
+
+  .summary-bar{
+    display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px;
+  }
+  .stat-card{
+    flex:1 1 200px;background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:18px 20px;box-shadow:0 1px 3px rgba(11,61,36,.06);
+  }
+  .stat-card .label{font-size:.78rem;color:var(--text-soft);margin-bottom:6px;}
+  .stat-card .value{font-size:1.6rem;font-weight:700;color:var(--green-800);}
+  .stat-card .sub{font-size:.75rem;color:var(--text-soft);margin-top:4px;}
+
+  .toolbar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:22px;
+  }
+  button.action-btn{
+    background:var(--green-800);color:#fff;border:none;padding:12px 26px;font-size:.94rem;font-weight:700;
+    border-radius:999px;cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(11,61,36,.25);
+  }
+  button.action-btn:hover:not(:disabled){background:var(--green-900);}
+  button.action-btn:disabled{opacity:.6;cursor:wait;}
+  button.ghost-btn{
+    background:#fff;color:var(--green-800);border:1px solid var(--green-800);padding:11px 22px;
+    font-size:.9rem;font-weight:600;border-radius:999px;cursor:pointer;font-family:inherit;
+  }
+  button.ghost-btn:hover{background:var(--green-100);}
+  .toolbar-note{font-size:.82rem;color:var(--text-soft);}
+
+  .status-msg{
+    font-size:.86rem;padding:10px 14px;border-radius:8px;margin-bottom:18px;display:none;
+  }
+  .status-msg.show{display:block;}
+  .status-msg.ok{background:var(--ok-bg);color:var(--green-800);border:1px solid #bfe0c9;}
+  .status-msg.error{background:#fdecea;color:var(--danger);border:1px solid #f5c6c2;}
+  .status-msg.loading{background:var(--sub-bg);color:var(--text-soft);border:1px solid var(--border);}
+
+  details.domain-acc{
+    border:1px solid var(--border);border-radius:14px;background:var(--card);
+    margin-bottom:16px;overflow:hidden;
+  }
+  details.domain-acc[open]{box-shadow:0 1px 3px rgba(11,61,36,.06);}
+  details.domain-acc summary{
+    list-style:none;cursor:pointer;padding:14px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(135deg,#eef6f0,#ffffff);
+  }
+  details.domain-acc summary::-webkit-details-marker{display:none;}
+  details.domain-acc summary h2{margin:0;font-size:1.02rem;color:var(--green-800);}
+  details.domain-acc summary .chev{transition:transform .2s ease;color:var(--green-800);}
+  details.domain-acc[open] summary .chev{transform:rotate(180deg);}
+  .domain-body{padding:4px 18px 16px;}
+
+  .component-title{
+    font-size:.86rem;font-weight:700;color:var(--green-700);
+    margin:16px 0 6px;padding-bottom:5px;border-bottom:2px solid var(--green-100);
+  }
+  .component-title:first-child{margin-top:4px;}
+
+  table.stat-table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  table.stat-table th{
+    text-align:left;padding:8px 8px;color:var(--text-soft);font-weight:600;
+    border-bottom:2px solid var(--border);white-space:nowrap;
+  }
+  table.stat-table td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.stat-table td.num{color:#fff;background:var(--green-700);font-weight:700;border-radius:6px;
+    width:26px;height:26px;text-align:center;padding:4px;}
+  table.stat-table td.item-text{max-width:420px;}
+  table.stat-table td.center{text-align:center;white-space:nowrap;}
+
+  .badge-consensus{
+    display:inline-block;padding:3px 10px;border-radius:999px;font-size:.74rem;font-weight:700;
+  }
+  .badge-consensus.yes{background:var(--ok-bg);color:var(--green-800);}
+  .badge-consensus.no{background:var(--warn-bg);color:var(--warn);}
+  .badge-consensus.na{background:var(--sub-bg);color:var(--text-soft);}
+
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--text-soft);
+  }
+
+  .nav-links{margin-bottom:18px;}
+  .nav-links a{
+    text-decoration:none;color:var(--green-800);font-size:.82rem;font-weight:600;
+    padding:7px 14px;border-radius:999px;background:var(--sub-bg);border:1px solid var(--border);
+  }
+
+  @media (max-width:640px){
+    table.stat-table{font-size:.78rem;}
+    table.stat-table td.item-text{max-width:220px;}
+    header.hero h1{font-size:1.15rem;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Air Pollution Control Competency Survey</div>
+  <h1>สรุปผลข้อมูลและค่าสถิติ (Median / IQR)</h1>
+  <p>เรื่อง การพัฒนารูปแบบสมรรถนะผู้ควบคุมระบบบำบัดมลพิษอากาศของโรงงานอุตสาหกรรมในยุคดิจิทัล<br>
+  ข้อมูลดิบจากชีต "raw2" · ผลสรุปสถิติบันทึกไว้ที่ชีต "stat2"</p>
+</header>
+
+<main>
+
+  <div class="nav-links">
+    <a href="?page=airpollution">&larr; กลับไปหน้าแบบสอบถาม</a>
+  </div>
+
+  <div class="summary-bar">
+    <div class="stat-card">
+      <div class="label">จำนวนผู้ตอบแบบสอบถามทั้งหมด</div>
+      <div class="value" id="statTotalResponses">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ข้อที่มีฉันทามติ (IQR &le; 1)</div>
+      <div class="value" id="statConsensusCount">-</div>
+      <div class="sub" id="statConsensusPct"></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">คำนวณ/บันทึกล่าสุด</div>
+      <div class="value" id="statGeneratedAt" style="font-size:1.05rem;">-</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="action-btn" id="refreshBtn">คำนวณค่าสถิติ (พรีวิว)</button>
+    <button class="ghost-btn" id="saveBtn">บันทึกผลลงชีต "stat2"</button>
+    <span class="toolbar-note">พรีวิวคำนวณจากข้อมูลใน "raw2" ทันที ไม่บันทึกจนกว่าจะกด "บันทึกผลลงชีต"</span>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+
+  <div id="tablesContainer"></div>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    ยังไม่มีข้อมูลคำตอบในชีต "raw2" — กดปุ่ม "คำนวณค่าสถิติ (พรีวิว)" อีกครั้งหลังมีผู้ตอบแบบสอบถามแล้ว
+  </div>
+
+</main>
+
+<script>
+const DOMAINS = [
+  { key:'K', title:'สมรรถนะหลักที่ 1 ด้านความรู้ (Knowledge)', components:[
+    {code:'1.1', title:'ความรู้พื้นฐานด้านมลพิษอากาศและผลกระทบต่อสิ่งแวดล้อม', from:1, to:3},
+    {code:'1.2', title:'ความรู้ด้านกฎหมาย มาตรฐาน และการรายงานตามข้อกำหนด', from:4, to:7},
+    {code:'1.3', title:'ความรู้ด้านกระบวนการผลิตและการวิเคราะห์แหล่งกำเนิดมลพิษ', from:8, to:13},
+    {code:'1.4', title:'ความรู้ด้านการจัดการ บำบัด และควบคุมระบบบำบัดมลพิษอากาศ', from:14, to:20},
+    {code:'1.5', title:'ความรู้ด้านการประเมินความเสี่ยงและเทคโนโลยีดิจิทัล', from:21, to:26},
+    {code:'1.6', title:'ความรู้ด้านการวางแผนงานและความปลอดภัย', from:27, to:30}
+  ]},
+  { key:'S', title:'สมรรถนะหลักที่ 2 ด้านทักษะ (Skill)', components:[
+    {code:'2.1', title:'ทักษะด้านการตรวจสอบ วิเคราะห์ และตีความข้อมูล', from:31, to:34},
+    {code:'2.2', title:'ทักษะด้านการวิเคราะห์ปัญหา การแก้ไขระบบ และเทคโนโลยีดิจิทัล', from:35, to:41},
+    {code:'2.3', title:'ทักษะด้านการจัดทำรายงานและการวางแผนปฏิบัติงาน', from:42, to:47},
+    {code:'2.4', title:'ทักษะด้านการถ่ายทอดความรู้และพัฒนาบุคลากร', from:48, to:50}
+  ]},
+  { key:'A', title:'สมรรถนะหลักที่ 3 ด้านคุณลักษณะที่พึงประสงค์ (Attribute)', components:[
+    {code:'3.1', title:'จิตสำนึกความรับผิดชอบและคุณธรรมจรรยาบรรณ', from:51, to:56},
+    {code:'3.2', title:'การคิดวิเคราะห์ การแก้ปัญหา และการตัดสินใจ', from:57, to:60},
+    {code:'3.3', title:'การสื่อสาร การทำงานร่วมกับผู้อื่น และการเรียนรู้ปรับตัว', from:61, to:66},
+    {code:'3.4', title:'การบริหารจัดการงานและวิสัยทัศน์ระยะยาว', from:67, to:70}
+  ]}
+];
+
+function fmt(v){
+  return (v === null || v === undefined || v === '') ? '-' : v;
+}
+
+function formatDateTime(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+}
+
+function showStatus(kind, text){
+  const el = document.getElementById('statusMsg');
+  el.className = 'status-msg show ' + kind;
+  el.textContent = text;
+}
+function hideStatus(){
+  document.getElementById('statusMsg').className = 'status-msg';
+}
+
+function consensusBadge(item){
+  if(item.consensus === null || item.n === 0){
+    return '<span class="badge-consensus na">ไม่มีข้อมูล</span>';
+  }
+  return item.consensus
+    ? '<span class="badge-consensus yes">ฉันทามติ</span>'
+    : '<span class="badge-consensus no">ยังไม่ฉันทามติ</span>';
+}
+
+function renderSummary(summary){
+  document.getElementById('statTotalResponses').textContent = summary.totalResponses;
+  document.getElementById('statGeneratedAt').textContent = formatDateTime(summary.generatedAt);
+
+  const withData = summary.items.filter(it => it.n > 0);
+  const consensusCount = withData.filter(it => it.consensus).length;
+  document.getElementById('statConsensusCount').textContent = consensusCount + ' / ' + summary.items.length;
+  document.getElementById('statConsensusPct').textContent = withData.length
+    ? Math.round((consensusCount / withData.length) * 100) + '% ของข้อที่มีข้อมูล'
+    : '';
+
+  const itemByNum = {};
+  summary.items.forEach(it => itemByNum[it.num] = it);
+
+  const container = document.getElementById('tablesContainer');
+  container.innerHTML = '';
+
+  const emptyState = document.getElementById('emptyState');
+  emptyState.style.display = summary.totalResponses === 0 ? 'block' : 'none';
+
+  DOMAINS.forEach((dom, idx) => {
+    const details = document.createElement('details');
+    details.className = 'domain-acc';
+    if(idx === 0) details.open = true;
+
+    const summaryEl = document.createElement('summary');
+    summaryEl.innerHTML = `<h2>${dom.title}</h2><span class="chev">&#9660;</span>`;
+    details.appendChild(summaryEl);
+
+    const body = document.createElement('div');
+    body.className = 'domain-body';
+
+    dom.components.forEach(comp => {
+      const compTitle = document.createElement('div');
+      compTitle.className = 'component-title';
+      compTitle.textContent = `องค์ประกอบสมรรถนะที่ ${comp.code} ${comp.title}`;
+      body.appendChild(compTitle);
+
+      const table = document.createElement('table');
+      table.className = 'stat-table';
+      table.innerHTML = `
+        <thead><tr>
+          <th></th><th>ข้อความ</th><th>N</th><th>Median</th><th>Q1</th><th>Q3</th><th>IQR</th><th>สถานะ</th>
+        </tr></thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+
+      for(let n = comp.from; n <= comp.to; n++){
+        const it = itemByNum[n] || {num:n, text:'', n:0, median:null, q1:null, q3:null, iqr:null, consensus:null};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="center"><span class="num">${it.num}</span></td>
+          <td class="item-text">${it.text}</td>
+          <td class="center">${fmt(it.n)}</td>
+          <td class="center">${fmt(it.median)}</td>
+          <td class="center">${fmt(it.q1)}</td>
+          <td class="center">${fmt(it.q3)}</td>
+          <td class="center">${fmt(it.iqr)}</td>
+          <td class="center">${consensusBadge(it)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      body.appendChild(table);
+    });
+
+    details.appendChild(body);
+    container.appendChild(details);
+  });
+}
+
+function withGasRun(successCb, failureCb){
+  if(typeof google === 'undefined' || !google.script || !google.script.run){
+    failureCb(new Error('หน้านี้ต้องเปิดผ่าน Web app URL ของ Apps Script เท่านั้น (google.script.run ใช้ไม่ได้เมื่อเปิดไฟล์ในเครื่องโดยตรง)'));
+    return null;
+  }
+  return google.script.run.withSuccessHandler(successCb).withFailureHandler(failureCb);
+}
+
+function loadPreview(){
+  showStatus('loading', 'กำลังคำนวณค่าสถิติจากข้อมูลใน "raw2" ...');
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('saveBtn').disabled = true;
+
+  const runner = withGasRun(
+    (summary) => {
+      hideStatus();
+      renderSummary(summary);
+      document.getElementById('refreshBtn').disabled = false;
+      document.getElementById('saveBtn').disabled = false;
+    },
+    (err) => {
+      showStatus('error', 'เกิดข้อผิดพลาด: ' + (err && err.message ? err.message : err));
+      document.getElementById('refreshBtn').disabled = false;
+      document.getElementById('saveBtn').disabled = false;
+    }
+  );
+  if(runner) runner.computeStatSummary();
+}
+
+function saveToSheet(){
+  showStatus('loading', 'กำลังคำนวณและบันทึกผลลงชีต "stat2" ...');
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('saveBtn').disabled = true;
+
+  const runner = withGasRun(
+    (summary) => {
+      showStatus('ok', 'บันทึกผลลงชีต "stat2" เรียบร้อยแล้ว เมื่อ ' + formatDateTime(summary.generatedAt));
+      renderSummary(summary);
+      document.getElementById('refreshBtn').disabled = false;
+      document.getElementById('saveBtn').disabled = false;
+    },
+    (err) => {
+      showStatus('error', 'บันทึกไม่สำเร็จ: ' + (err && err.message ? err.message : err));
+      document.getElementById('refreshBtn').disabled = false;
+      document.getElementById('saveBtn').disabled = false;
+    }
+  );
+  if(runner) runner.computeAndSaveStats();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadPreview);
+document.getElementById('saveBtn').addEventListener('click', saveToSheet);
+
+loadPreview();
+</script>
+
+</body>
+</html>
