@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>niti-mng | แบบประเมิน IOC</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --y50: #fefce8; --y100: #fef9c3; --y200: #fef08a; --y300: #fde047;
+      --y400: #facc15; --y500: #eab308; --y600: #ca8a04; --y700: #a16207; --y900: #713f12;
+      --ink: #3f2d05; --muted: #7c6a3a; --line: #f3e3a0; --ok: #15803d; --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Sarabun', sans-serif; font-size: 16px; color: var(--ink);
+           background: linear-gradient(180deg, var(--y100), var(--y50) 320px); line-height: 1.6; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    header.top { background: linear-gradient(135deg, var(--y400), var(--y300)); border-radius: 16px;
+                 padding: 22px 20px; box-shadow: 0 6px 20px rgba(161,98,7,.18); margin-bottom: 18px; }
+    header.top h1 { margin: 0 0 6px; font-size: 22px; line-height: 1.4; }
+    header.top p { margin: 0; color: var(--y900); }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px;
+            margin-bottom: 16px; box-shadow: 0 2px 8px rgba(161,98,7,.06); }
+    .card h2 { margin: 0 0 10px; font-size: 19px; color: var(--y900); border-left: 6px solid var(--y400); padding-left: 10px; }
+    label { font-weight: 600; display: block; margin: 10px 0 4px; }
+    input[type=text], input[type=password], textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #ead98f; border-radius: 10px;
+      font: inherit; background: var(--y50); color: var(--ink); }
+    input:focus, textarea:focus { outline: none; border-color: var(--y500); box-shadow: 0 0 0 3px rgba(250,204,21,.35); }
+    textarea { min-height: 44px; resize: vertical; }
+    .btn { display: inline-block; border: 0; border-radius: 10px; padding: 11px 22px; font: inherit; font-weight: 700;
+           background: var(--y400); color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 var(--y600); }
+    .btn:hover { background: var(--y300); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn.ghost { background: #fff; border: 1.5px solid var(--y500); box-shadow: none; }
+    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; display: none; }
+    .msg.err { display: block; background: #fef2f2; color: var(--bad); border: 1px solid #fecaca; }
+    .msg.ok { display: block; background: #f0fdf4; color: var(--ok); border: 1px solid #bbf7d0; }
+    .login-box { max-width: 420px; margin: 30px auto; }
+    .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+               background: var(--y200); border-radius: 12px; padding: 8px 14px; margin-bottom: 14px; }
+    .crit { margin: 6px 0 0; padding-left: 20px; }
+    .mc { background: var(--y300); font-weight: 700; padding: 10px 14px; border-radius: 10px; margin: 18px 0 8px; }
+    .grp { font-weight: 700; color: var(--y700); margin: 14px 0 6px; padding: 4px 10px; background: var(--y100); border-radius: 8px; }
+    .item { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fffdf3; }
+    .item.missing { border-color: var(--bad); background: #fff5f5; }
+    .item .q { display: flex; gap: 10px; }
+    .item .no { flex: 0 0 auto; min-width: 34px; height: 34px; border-radius: 50%; background: var(--y400);
+                display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .item .txt { flex: 1; padding-top: 4px; }
+    .opts { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 8px 44px; }
+    .opts label { margin: 0; font-weight: 600; }
+    .opts input { position: absolute; opacity: 0; pointer-events: none; }
+    .opts span { display: inline-block; padding: 6px 14px; border: 1.5px solid #e7d27a; border-radius: 999px;
+                 background: #fff; cursor: pointer; user-select: none; }
+    .opts input:checked + span { background: var(--y400); border-color: var(--y600); }
+    .opts input:focus-visible + span { box-shadow: 0 0 0 3px rgba(250,204,21,.5); }
+    .item textarea { margin-left: 44px; width: calc(100% - 44px); font-size: 15px; }
+    .progress { position: sticky; top: 0; z-index: 5; background: var(--y50); padding: 8px 0; }
+    .bar { height: 10px; background: var(--y100); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+    .bar > div { height: 100%; width: 0; background: var(--y500); transition: width .2s; }
+    .progress small { color: var(--muted); }
+    .center { text-align: center; }
+    .done-icon { font-size: 56px; }
+    .hidden { display: none !important; }
+    .loading { position: fixed; inset: 0; background: rgba(254,252,232,.8); display: flex; align-items: center;
+               justify-content: center; z-index: 50; font-weight: 700; }
+    .spin { width: 42px; height: 42px; border: 5px solid var(--y200); border-top-color: var(--y500); border-radius: 50%;
+            animation: s 1s linear infinite; margin-right: 12px; }
+    @keyframes s { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      header.top h1 { font-size: 18px; }
+      .opts, .item textarea { margin-left: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>แบบประเมินความสอดคล้องของแบบสอบถามเพื่อการวิจัย (IOC)</h1>
+    <p>เรื่อง การพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล</p>
+  </header>
+
+  <!-- Login -->
+  <section id="loginView" class="card login-box">
+    <h2>เข้าสู่ระบบผู้เชี่ยวชาญ</h2>
+    <form id="loginForm" autocomplete="off">
+      <label for="user">ชื่อผู้ใช้</label>
+      <input type="text" id="user" placeholder="niti01 - niti21" required>
+      <label for="pass">รหัสผ่าน</label>
+      <input type="password" id="pass" required>
+      <div style="margin-top:14px"><button class="btn" type="submit" id="loginBtn">เข้าสู่ระบบ</button></div>
+      <div id="loginMsg" class="msg"></div>
+    </form>
+  </section>
+
+  <!-- Already submitted -->
+  <section id="dupView" class="card center hidden">
+    <div class="done-icon">⚠️</div>
+    <h2 style="border:0;padding:0">ท่านได้ตอบแบบประเมินแล้ว</h2>
+    <p>ผู้ใช้ <b class="whoami"></b> ได้ส่งแบบประเมินเรียบร้อยแล้ว ระบบไม่อนุญาตให้ตอบซ้ำ</p>
+    <button class="btn ghost" onclick="logout()">ออกจากระบบ</button>
+  </section>
+
+  <!-- Done -->
+  <section id="doneView" class="card center hidden">
+    <div class="done-icon">✅</div>
+    <h2 style="border:0;padding:0">บันทึกคำตอบเรียบร้อยแล้ว</h2>
+    <p>ขอขอบพระคุณท่านเป็นอย่างสูงที่กรุณาช่วยตอบแบบประเมินความสอดคล้อง</p>
+    <button class="btn ghost" onclick="logout()">ออกจากระบบ</button>
+  </section>
+
+  <!-- Survey -->
+  <section id="surveyView" class="hidden">
+    <div class="userbar">
+      <span>ผู้ใช้: <b class="whoami"></b></span>
+      <button class="btn ghost" type="button" onclick="logout()" style="padding:6px 14px">ออกจากระบบ</button>
+    </div>
+
+    <div class="card">
+      <p>ผู้วิจัยมีวัตถุประสงค์ในการจัดทำแบบสอบถามฉบับนี้ขึ้น เพื่อศึกษาวิจัยเกี่ยวกับการพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล ซึ่งเป็นส่วนหนึ่งของการทำวิทยานิพนธ์ สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์ คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
+      <p>แบบสอบถามนี้เป็นเครื่องมือเพื่อประเมินความสอดคล้องของข้อมูลประกอบการจัดทำวิทยานิพนธ์ เรื่อง การพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล เพื่อให้ข้อเสนอแนะในประเด็นคำถามเกี่ยวกับความเหมาะสมและสอดคล้องตามเนื้อหาในแต่ละข้อ</p>
+      <p><b>ขอให้ท่านโปรดทำเครื่องหมาย √ “ความคิดเห็น” ตามความคิดเห็นของท่าน โดยใช้เกณฑ์ดังนี้</b></p>
+      <ul class="crit">
+        <li>ทำเครื่องหมาย √ ในช่องสอดคล้อง (+1) เมื่อท่านมีความเห็นว่า สอดคล้อง</li>
+        <li>ทำเครื่องหมาย √ ในช่องไม่แน่ใจ (0) เมื่อท่านมีความเห็นว่า ไม่แน่ใจ</li>
+        <li>ทำเครื่องหมาย √ ในช่องไม่สอดคล้อง (-1) เมื่อท่านมีความเห็นว่า ไม่สอดคล้อง</li>
+      </ul>
+      <p>ผู้วิจัยขอขอบพระคุณท่านเป็นอย่างสูงที่กรุณาช่วยตอบแบบประเมินความสอดคล้องของข้อมูลเพื่อประกอบการจัดทำการพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล ดังกล่าว</p>
+      <p style="text-align:right">นายพยัคฆ์ อุ่นใหม่ (ผู้วิจัย)<br>นักศึกษาปริญญาเอก สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์<br>คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
+    </div>
+
+    <div class="card">
+      <h2>คำชี้แจงในการทำแบบสอบถาม</h2>
+      <p>1. แบบสอบถามชุดนี้มีแบ่งออกเป็น 3 ส่วน ได้แก่<br>
+        &nbsp;&nbsp;&nbsp;ส่วนที่ 1 ข้อคำถามเกี่ยวกับข้อมูลพื้นฐานทั่วไปของผู้ตอบแบบสอบถาม<br>
+        &nbsp;&nbsp;&nbsp;ส่วนที่ 2 ข้อคำถามปลายปิดเกี่ยวกับรายการศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล จำนวน 5 องค์ประกอบ 75 ข้อ<br>
+        &nbsp;&nbsp;&nbsp;ส่วนที่ 3 ข้อคำถามปลายเปิดเกี่ยวกับรายการศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล</p>
+      <p>2. โปรดตอบคำถามในแบบสอบถามทุกข้อเพื่อพิจารณาความสอดคล้องระหว่างปัจจัยที่ส่งผลต่อรายการศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัลกับวัตถุประสงค์ของการวิจัยและพฤติกรรมบ่งชี้หรือไม่</p>
+      <p>3. กรอบการจำแนก K = ความรู้และความเข้าใจ | S = ทักษะและความสามารถ | A = คุณลักษณะและพฤติกรรม | I = ศักยภาพเชิงบูรณาการและการตัดสินใจ<br>
+        &nbsp;&nbsp;&nbsp;หมายเหตุ I ไม่ใช่องค์ประกอบทฤษฎีที่ใช้แทน KSA แต่เป็นระดับการประยุกต์ใช้ KSA ร่วมกับการวิเคราะห์การตัดสินใจ การบริหารความเสี่ยง และการพัฒนางาน</p>
+    </div>
+
+    <div class="progress">
+      <div class="bar"><div id="barFill"></div></div>
+      <small id="progText">ตอบแล้ว 0 / 80 ข้อ</small>
+    </div>
+
+    <form id="surveyForm">
+      <div class="card">
+        <h2>ส่วนที่ 1 ข้อมูลพื้นฐานทั่วไปของผู้ตอบแบบสอบถาม</h2>
+        <div id="part1"></div>
+      </div>
+
+      <div class="card">
+        <h2>ส่วนที่ 2 ข้อคำถามปลายปิดเกี่ยวกับรายการศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล</h2>
+        <div id="part2"></div>
+      </div>
+
+      <div class="card">
+        <h2>ส่วนที่ 3 ข้อเสนอแนะเพิ่มเติมของผู้เชี่ยวชาญเกี่ยวกับศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล</h2>
+        <textarea id="part3" rows="6"></textarea>
+      </div>
+
+      <div class="card">
+        <label for="expertName">ลงชื่อ ผู้เชี่ยวชาญ (ชื่อ - นามสกุล)</label>
+        <input type="text" id="expertName" required>
+        <div style="margin-top:14px"><button class="btn" type="submit" id="submitBtn">ส่งแบบประเมิน</button></div>
+        <div id="submitMsg" class="msg"></div>
+      </div>
+    </form>
+  </section>
+</div>
+
+<div id="loading" class="loading hidden"><div class="spin"></div><span id="loadingText">กำลังโหลด...</span></div>
+
+<script>
+  var session = { user: '', pass: '' };
+  var itemIds = [];
+  var Q = null;
+
+  function $(id) { return document.getElementById(id); }
+  function show(view) {
+    ['loginView', 'dupView', 'doneView', 'surveyView'].forEach(function (v) {
+      $(v).classList.toggle('hidden', v !== view);
+    });
+    window.scrollTo(0, 0);
+  }
+  function loading(on, text) {
+    $('loading').classList.toggle('hidden', !on);
+    if (text) $('loadingText').textContent = text;
+  }
+  function setMsg(el, type, text) { el.className = 'msg ' + type; el.textContent = text; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function itemHtml(id, label, text) {
+    var opts = [['1', '+1 สอดคล้อง'], ['0', '0 ไม่แน่ใจ'], ['-1', '-1 ไม่สอดคล้อง']].map(function (o) {
+      return '<label><input type="radio" name="r_' + id + '" value="' + o[0] + '"><span>' + o[1] + '</span></label>';
+    }).join('');
+    return '<div class="item" id="it_' + id + '">' +
+      '<div class="q"><div class="no">' + label + '</div><div class="txt">' + esc(text) + '</div></div>' +
+      '<div class="opts">' + opts + '</div>' +
+      '<textarea name="c_' + id + '" rows="1" placeholder="ข้อเสนอแนะหรือข้อคิดเห็นเพิ่มเติม"></textarea>' +
+      '</div>';
+  }
+
+  function render(q) {
+    Q = q; itemIds = [];
+    var h1 = '';
+    q.part1.forEach(function (t, i) {
+      var id = 'p1_' + (i + 1); itemIds.push(id);
+      h1 += itemHtml(id, i + 1, t);
+    });
+    $('part1').innerHTML = h1;
+
+    var h2 = '', no = 0;
+    q.part2.forEach(function (mc) {
+      h2 += '<div class="mc">' + mc.code + ' ' + esc(mc.name) + '</div>';
+      mc.groups.forEach(function (gr) {
+        h2 += '<div class="grp">' + gr.g + ' ' + esc(q.groupNames[gr.g]) + '</div>';
+        gr.items.forEach(function (t) {
+          no++; var id = 'p2_' + no; itemIds.push(id);
+          h2 += itemHtml(id, no, t);
+        });
+      });
+    });
+    $('part2').innerHTML = h2;
+    restoreDraft();
+    updateProgress();
+  }
+
+  function collect() {
+    var f = $('surveyForm'), ratings = {}, comments = {};
+    itemIds.forEach(function (id) {
+      var c = f.querySelector('input[name="r_' + id + '"]:checked');
+      ratings[id] = c ? c.value : '';
+      comments[id] = f.elements['c_' + id].value;
+    });
+    return { ratings: ratings, comments: comments, part3: $('part3').value, name: $('expertName').value };
+  }
+
+  function updateProgress() {
+    var d = collect(), n = 0;
+    itemIds.forEach(function (id) {
+      if (d.ratings[id] !== '') { n++; $('it_' + id).classList.remove('missing'); }
+    });
+    $('barFill').style.width = (itemIds.length ? n / itemIds.length * 100 : 0) + '%';
+    $('progText').textContent = 'ตอบแล้ว ' + n + ' / ' + itemIds.length + ' ข้อ';
+  }
+
+  // ร่างคำตอบเก็บไว้ในเครื่อง (กันข้อมูลหายระหว่างทำ)
+  function draftKey() { return 'niti-mng-draft-' + session.user; }
+  function saveDraft() { try { localStorage.setItem(draftKey(), JSON.stringify(collect())); } catch (e) {} }
+  function clearDraft() { try { localStorage.removeItem(draftKey()); } catch (e) {} }
+  function restoreDraft() {
+    var d; try { d = JSON.parse(localStorage.getItem(draftKey()) || 'null'); } catch (e) { d = null; }
+    if (!d) return;
+    var f = $('surveyForm');
+    itemIds.forEach(function (id) {
+      if (d.ratings && d.ratings[id] !== '' && d.ratings[id] != null) {
+        var el = f.querySelector('input[name="r_' + id + '"][value="' + d.ratings[id] + '"]');
+        if (el) el.checked = true;
+      }
+      if (d.comments && d.comments[id]) f.elements['c_' + id].value = d.comments[id];
+    });
+    $('part3').value = d.part3 || '';
+    $('expertName').value = d.name || '';
+  }
+
+  $('surveyForm').addEventListener('change', function () { updateProgress(); saveDraft(); });
+  $('surveyForm').addEventListener('input', saveDraft);
+
+  $('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = $('user').value.trim().toLowerCase(), p = $('pass').value;
+    $('loginBtn').disabled = true; loading(true, 'กำลังตรวจสอบ...');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        $('loginBtn').disabled = false;
+        session.user = res.user; session.pass = p;
+        Array.prototype.forEach.call(document.querySelectorAll('.whoami'), function (el) { el.textContent = res.user; });
+        if (res.submitted) { loading(false); show('dupView'); return; }
+        loading(true, 'กำลังโหลดแบบประเมิน...');
+        google.script.run
+          .withSuccessHandler(function (q) { render(q); loading(false); show('surveyView'); })
+          .withFailureHandler(function (err) { loading(false); setMsg($('loginMsg'), 'err', err.message || err); })
+          .getQuestions();
+      })
+      .withFailureHandler(function (err) {
+        $('loginBtn').disabled = false; loading(false);
+        setMsg($('loginMsg'), 'err', err.message || err);
+      })
+      .login(u, p);
+  });
+
+  $('surveyForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var d = collect(), missing = itemIds.filter(function (id) { return d.ratings[id] === ''; });
+    itemIds.forEach(function (id) { $('it_' + id).classList.toggle('missing', missing.indexOf(id) !== -1); });
+    if (missing.length) {
+      setMsg($('submitMsg'), 'err', 'ยังไม่ได้ให้ความคิดเห็นอีก ' + missing.length + ' ข้อ (กรอบสีแดง)');
+      $('it_' + missing[0]).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!d.name.trim()) { setMsg($('submitMsg'), 'err', 'กรุณากรอกชื่อผู้เชี่ยวชาญ'); $('expertName').focus(); return; }
+    if (!confirm('ยืนยันการส่งแบบประเมิน? (ส่งได้เพียงครั้งเดียว)')) return;
+    $('submitBtn').disabled = true; loading(true, 'กำลังบันทึก...');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        loading(false); $('submitBtn').disabled = false;
+        if (res.ok) { clearDraft(); show('doneView'); }
+        else if (res.duplicate) { clearDraft(); show('dupView'); }
+        else setMsg($('submitMsg'), 'err', res.message);
+      })
+      .withFailureHandler(function (err) {
+        loading(false); $('submitBtn').disabled = false;
+        setMsg($('submitMsg'), 'err', err.message || err);
+      })
+      .submitResponse(session.user, session.pass, d);
+  });
+
+  function logout() {
+    session = { user: '', pass: '' };
+    $('user').value = ''; $('pass').value = ''; $('loginMsg').className = 'msg';
+    $('part1').innerHTML = ''; $('part2').innerHTML = ''; $('part3').value = ''; $('expertName').value = '';
+    $('submitMsg').className = 'msg';
+    show('loginView');
+  }
+</script>
+</body>
+</html>
