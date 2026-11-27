@@ -196,6 +196,20 @@ def circle(cx, cy, r):
     d = f"M 0 {r:.2f} A {r:.2f} {r:.2f} 0 1 1 {2 * r:.2f} {r:.2f} A {r:.2f} {r:.2f} 0 1 1 0 {r:.2f} Z"
     return cx - r, cy - r, 2 * r, 2 * r, d
 
+def arc_arrow(cx, cy, rc, bw, hw, a0, a_head, a_tip):
+    """ลูกศรโค้ง: แถบ r=rc±bw จากมุม a0 ถึง a_head แล้วหัวสามเหลี่ยมกว้าง ±hw ปลายที่ a_tip (ตามเข็มนาฬิกา = มุมเพิ่ม)"""
+    Ro, Ri, Ho, Hi = rc + bw, rc - bw, rc + hw, rc - hw
+    P = lambda r, a: pol(cx, cy, r, a)
+    key = dict(o0=P(Ro, a0), o1=P(Ro, a_head), h1=P(Ho, a_head), t=P(rc, a_tip), h2=P(Hi, a_head),
+               i1=P(Ri, a_head), i0=P(Ri, a0), Ro=Ro, Ri=Ri, large=1 if a_head - a0 > 180 else 0)
+    key['pts'] = [P(r, a0 + (a_head - a0) * i / 40) for r in (Ro, Ri) for i in range(41)] + [key['h1'], key['h2'], key['t']]
+    return key
+
+def arc_arrow_path(k, ox, oy):
+    f = lambda p: f"{p[0] - ox:.1f} {p[1] - oy:.1f}"
+    return (f"M {f(k['o0'])} A {k['Ro']:.1f} {k['Ro']:.1f} 0 {k['large']} 1 {f(k['o1'])} L {f(k['h1'])} L {f(k['t'])} "
+            f"L {f(k['h2'])} L {f(k['i1'])} A {k['Ri']:.1f} {k['Ri']:.1f} 0 {k['large']} 0 {f(k['i0'])} Z")
+
 def chevrons(a=34, h=30, t=13, gap=26, n=2):
     parts = []
     for i in range(n):
@@ -208,6 +222,9 @@ DEFAULTS = dict(
     size=3000, start_angle=-90, angle_mode='items',       # items = มุมตามจำนวนข้อย่อย, equal = เท่ากันทุกด้าน
     r_center=0.140, r_a=0.205, r_b=0.395, r_c=0.447,      # สัดส่วนของ size
     arrow=True, r_arrow=0.475, arrow_w=9, arrow_color='#21958A',
+    # arrow_style='arcs' (แบบล่าสุด): ระยะเป็น px
+    arrow_style='chevron', arrow_n=4, arrow_offset=19.7, arrow_band=7, arrow_head_w=19, arrow_head_deg=3.0,
+    arrow_joint_gap_deg=1.2, arrow_start=-45, arrow_single=False,
     center_color='#F4B183', sep_color='#FFFFFF', sep_w=4,
     pad=10, gap_code=14,
     fs_item=(40, 20), fs_name=(40, 22), fs_code_ratio=1.18, fs_aspect_code=(96, 50), fs_aspect_name=(40, 24),
@@ -274,8 +291,31 @@ def plan(spec, opt):
             cang = c1
         ang = a1
 
-    # ---- outer arrow ring (4 arcs + double chevrons pointing clockwise)
-    if opt['arrow']:
+    # ---- outer arrow ring
+    if opt['arrow'] and opt.get('arrow_style') == 'arcs':
+        # ลูกศรโค้งตามเข็มนาฬิกา N เส้น (แบบล่าสุดที่ผู้ใช้อนุมัติ): ห่างขอบวงล้อ, หัวลูกศรเกือบชนหางเส้นถัดไป
+        # arrow_single=false -> 1 shape ต่อ 1 ลูกศร (แก้ไขแยกได้); true -> รวมเป็นชิ้นเดียว กล่องจัตุรัสศูนย์กลางตรงวงล้อ (หมุนรอบวงล้อได้)
+        rc = RC + opt['arrow_offset']; bw = opt['arrow_band'] / 2; hw = opt['arrow_head_w'] / 2
+        n = opt['arrow_n']; dh = opt['arrow_head_deg']; gap = opt['arrow_joint_gap_deg']
+        segs = []
+        for k in range(n):
+            s0 = opt['arrow_start'] + 360 / n * k; tip = s0 + 360 / n - gap
+            segs.append(arc_arrow(cx, cy, rc, bw, hw, s0, tip - dh, tip))
+        if opt.get('arrow_single'):
+            R = rc + hw + 1
+            d = ' '.join(arc_arrow_path(sg, cx - R, cy - R) for sg in segs)
+            shapes.append(dict(tag='ring:0', left=cx - R, top=cy - R, width=2 * R, height=2 * R, path=d,
+                               color=opt['arrow_color'], stroke_weight=0))
+        else:
+            for k, sg in enumerate(segs):
+                pts = sg['pts']
+                x0 = min(p[0] for p in pts) - 1; y0 = min(p[1] for p in pts) - 1
+                x1 = max(p[0] for p in pts) + 1; y1 = max(p[1] for p in pts) + 1
+                shapes.append(dict(tag=f'ring:{k}', left=x0, top=y0, width=x1 - x0, height=y1 - y0,
+                                   path=arc_arrow_path(sg, x0, y0), color=opt['arrow_color'], stroke_weight=0))
+        if min(min(p[1] for p in sg['pts']) for sg in segs) < 0 or max(max(p[1] for p in sg['pts']) for sg in segs) > PH:
+            print('WARN: วงลูกศรเลยขอบหน้า — ลด arrow_offset/arrow_head_w', file=sys.stderr)
+    elif opt['arrow']:
         RR = opt['r_arrow'] * S; aw = opt['arrow_w']
         for k in range(4):
             a0 = opt['start_angle'] + 90 * k

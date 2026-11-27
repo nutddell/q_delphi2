@@ -7,7 +7,7 @@
    1123
   ],
   "item_ring": false,
-  "arrow": false,
+  "arrow": true,
   "aspect_style": "curved_block",
   "show_comp_code": false,
   "r_center": 0.135,
@@ -67,7 +67,9 @@
    "ผลงาน",
    "แรงจูงใจ",
    "การสอนงาน"
-  ]
+  ],
+  "arrow_style": "arcs",
+  "arrow_color": "#1B2A4A"
  },
  "aspects": [
   {
