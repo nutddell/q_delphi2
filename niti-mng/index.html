@@ -41,22 +41,33 @@
     .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
                background: var(--y200); border-radius: 12px; padding: 8px 14px; margin-bottom: 14px; }
     .crit { margin: 6px 0 0; padding-left: 20px; }
-    .mc { background: var(--y300); font-weight: 700; padding: 10px 14px; border-radius: 10px; margin: 18px 0 8px; }
-    .grp { font-weight: 700; color: var(--y700); margin: 14px 0 6px; padding: 4px 10px; background: var(--y100); border-radius: 8px; }
-    .item { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fffdf3; }
-    .item.missing { border-color: var(--bad); background: #fff5f5; }
-    .item .q { display: flex; gap: 10px; }
-    .item .no { flex: 0 0 auto; min-width: 34px; height: 34px; border-radius: 50%; background: var(--y400);
-                display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
-    .item .txt { flex: 1; padding-top: 4px; }
-    .opts { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 8px 44px; }
-    .opts label { margin: 0; font-weight: 600; }
-    .opts input { position: absolute; opacity: 0; pointer-events: none; }
-    .opts span { display: inline-block; padding: 6px 14px; border: 1.5px solid #e7d27a; border-radius: 999px;
-                 background: #fff; cursor: pointer; user-select: none; }
-    .opts input:checked + span { background: var(--y400); border-color: var(--y600); }
-    .opts input:focus-visible + span { box-shadow: 0 0 0 3px rgba(250,204,21,.5); }
-    .item textarea { margin-left: 44px; width: calc(100% - 44px); font-size: 15px; }
+    .tbl { border: 1px solid #e7d27a; border-radius: 12px; overflow: hidden; background: #fff; }
+    .tr { display: grid; grid-template-columns: 52px minmax(0,1fr) 68px 68px 68px 210px; border-top: 1px solid var(--line); }
+    .tr > div { padding: 8px; border-left: 1px solid var(--line); }
+    .tr > div:first-child { border-left: 0; }
+    .th { background: var(--y300); font-weight: 700; text-align: center; border-top: 0; position: sticky; top: 46px; z-index: 4; }
+    .th > div { display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; }
+    .th .em { font-size: 20px; display: block; }
+    .row-mc { background: var(--y200); font-weight: 700; padding: 9px 12px; border-top: 1px solid #e7d27a; }
+    .row-mc b { display: inline-block; min-width: 52px; }
+    .row-g { background: var(--y50); font-weight: 700; color: var(--y700); padding: 6px 12px; border-top: 1px solid var(--line); }
+    .row-g b { display: inline-block; min-width: 40px; }
+    .tr.item:nth-of-type(even) { background: #fffdf5; }
+    .tr.item.missing { background: #fff1f1; }
+    .tr.item.missing .cell-r { box-shadow: inset 0 0 0 1px #fca5a5; }
+    .no { text-align: center; font-weight: 700; }
+    .cell-r { display: flex; align-items: center; justify-content: center; padding: 4px !important; }
+    .cell-r label { margin: 0; cursor: pointer; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .cell-r input { position: absolute; opacity: 0; pointer-events: none; }
+    .cell-r span { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 54px; height: 46px;
+                   border: 1.5px solid #ead98f; border-radius: 10px; background: #fff; font-size: 13px; font-weight: 700; line-height: 1.1;
+                   filter: grayscale(1); opacity: .55; transition: all .12s; }
+    .cell-r span i { font-style: normal; font-size: 22px; }
+    .cell-r label:hover span { opacity: .85; filter: none; }
+    .cell-r input:checked + span { background: var(--y400); border-color: var(--y600); filter: none; opacity: 1; transform: scale(1.06); }
+    .cell-r input:focus-visible + span { box-shadow: 0 0 0 3px rgba(250,204,21,.6); }
+    .cell-c textarea { min-height: 46px; font-size: 14px; padding: 6px 8px; }
+    .rlab { display: none; }
     .progress { position: sticky; top: 0; z-index: 5; background: var(--y50); padding: 8px 0; }
     .bar { height: 10px; background: var(--y100); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
     .bar > div { height: 100%; width: 0; background: var(--y500); transition: width .2s; }
@@ -71,7 +82,13 @@
     @keyframes s { to { transform: rotate(360deg); } }
     @media (max-width: 600px) {
       header.top h1 { font-size: 18px; }
-      .opts, .item textarea { margin-left: 0; width: 100%; }
+      .th { display: none; }
+      .tr.item { grid-template-columns: 40px repeat(3, 1fr); }
+      .tr.item > .txt { grid-column: 2 / 5; }
+      .tr.item > .no { grid-row: 1 / 3; }
+      .tr.item > .cell-c { grid-column: 1 / 5; border-left: 0; border-top: 1px dashed var(--line); }
+      .tr.item > .cell-r { border-top: 1px dashed var(--line); }
+      .cell-r span { width: 100%; max-width: 110px; flex-direction: row; gap: 6px; height: 42px; font-size: 14px; }
     }
   </style>
 </head>
@@ -87,9 +104,7 @@
     <h2>เข้าสู่ระบบผู้เชี่ยวชาญ</h2>
     <form id="loginForm" autocomplete="off">
       <label for="user">ชื่อผู้ใช้</label>
-      <input type="text" id="user" placeholder="niti01 - niti21" required>
-      <label for="pass">รหัสผ่าน</label>
-      <input type="password" id="pass" required>
+      <input type="text" id="user" placeholder="ioc1 - ioc5" required>
       <div style="margin-top:14px"><button class="btn" type="submit" id="loginBtn">เข้าสู่ระบบ</button></div>
       <div id="loginMsg" class="msg"></div>
     </form>
@@ -127,6 +142,7 @@
         <li>ทำเครื่องหมาย √ ในช่องไม่แน่ใจ (0) เมื่อท่านมีความเห็นว่า ไม่แน่ใจ</li>
         <li>ทำเครื่องหมาย √ ในช่องไม่สอดคล้อง (-1) เมื่อท่านมีความเห็นว่า ไม่สอดคล้อง</li>
       </ul>
+      <p style="margin-top:8px">สัญลักษณ์ในตาราง: 👍 +1 เยี่ยม (สอดคล้อง) &nbsp;|&nbsp; 👌 0 พอใช้ (ไม่แน่ใจ) &nbsp;|&nbsp; 👎 -1 (ไม่สอดคล้อง)</p>
       <p>ผู้วิจัยขอขอบพระคุณท่านเป็นอย่างสูงที่กรุณาช่วยตอบแบบประเมินความสอดคล้องของข้อมูลเพื่อประกอบการจัดทำการพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล ดังกล่าว</p>
       <p style="text-align:right">นายพยัคฆ์ อุ่นใหม่ (ผู้วิจัย)<br>นักศึกษาปริญญาเอก สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์<br>คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>
     </div>
@@ -150,12 +166,12 @@
     <form id="surveyForm">
       <div class="card">
         <h2>ส่วนที่ 1 ข้อมูลพื้นฐานทั่วไปของผู้ตอบแบบสอบถาม</h2>
-        <div id="part1"></div>
+        <div class="tbl"><div class="tr th"><div>ที่</div><div>รายการ</div><div><span><span class="em">👎</span>-1</span></div><div><span><span class="em">👌</span>0</span></div><div><span><span class="em">👍</span>+1</span></div><div>ข้อเสนอแนะหรือข้อคิดเห็นเพิ่มเติม</div></div><div id="part1"></div></div>
       </div>
 
       <div class="card">
         <h2>ส่วนที่ 2 ข้อคำถามปลายปิดเกี่ยวกับรายการศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล</h2>
-        <div id="part2"></div>
+        <div class="tbl"><div class="tr th"><div>ที่</div><div>รายการ</div><div><span><span class="em">👎</span>-1</span></div><div><span><span class="em">👌</span>0</span></div><div><span><span class="em">👍</span>+1</span></div><div>ข้อเสนอแนะหรือข้อคิดเห็นเพิ่มเติม</div></div><div id="part2"></div></div>
       </div>
 
       <div class="card">
@@ -176,7 +192,7 @@
 <div id="loading" class="loading hidden"><div class="spin"></div><span id="loadingText">กำลังโหลด...</span></div>
 
 <script>
-  var session = { user: '', pass: '' };
+  var session = { user: '' };
   var itemIds = [];
   var Q = null;
 
@@ -199,13 +215,13 @@
   }
 
   function itemHtml(id, label, text) {
-    var opts = [['1', '+1 สอดคล้อง'], ['0', '0 ไม่แน่ใจ'], ['-1', '-1 ไม่สอดคล้อง']].map(function (o) {
-      return '<label><input type="radio" name="r_' + id + '" value="' + o[0] + '"><span>' + o[1] + '</span></label>';
+    var opts = [['-1', '👎', '-1'], ['0', '👌', '0'], ['1', '👍', '+1']].map(function (o) {
+      return '<div class="cell-r"><label title="' + o[2] + '"><input type="radio" name="r_' + id + '" value="' + o[0] + '">' +
+        '<span><i>' + o[1] + '</i>' + o[2] + '</span></label></div>';
     }).join('');
-    return '<div class="item" id="it_' + id + '">' +
-      '<div class="q"><div class="no">' + label + '</div><div class="txt">' + esc(text) + '</div></div>' +
-      '<div class="opts">' + opts + '</div>' +
-      '<textarea name="c_' + id + '" rows="1" placeholder="ข้อเสนอแนะหรือข้อคิดเห็นเพิ่มเติม"></textarea>' +
+    return '<div class="tr item" id="it_' + id + '">' +
+      '<div class="no">' + label + '</div><div class="txt">' + esc(text) + '</div>' + opts +
+      '<div class="cell-c"><textarea name="c_' + id + '" rows="1" placeholder="ข้อเสนอแนะ"></textarea></div>' +
       '</div>';
   }
 
@@ -220,9 +236,9 @@
 
     var h2 = '', no = 0;
     q.part2.forEach(function (mc) {
-      h2 += '<div class="mc">' + mc.code + ' ' + esc(mc.name) + '</div>';
+      h2 += '<div class="row-mc"><b>' + mc.code + '</b> ' + esc(mc.name) + '</div>';
       mc.groups.forEach(function (gr) {
-        h2 += '<div class="grp">' + gr.g + ' ' + esc(q.groupNames[gr.g]) + '</div>';
+        h2 += '<div class="row-g"><b>' + gr.g + '</b>' + esc(q.groupNames[gr.g]) + '</div>';
         gr.items.forEach(function (t) {
           no++; var id = 'p2_' + no; itemIds.push(id);
           h2 += itemHtml(id, no, t);
@@ -277,12 +293,12 @@
 
   $('loginForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    var u = $('user').value.trim().toLowerCase(), p = $('pass').value;
+    var u = $('user').value.trim().toLowerCase();
     $('loginBtn').disabled = true; loading(true, 'กำลังตรวจสอบ...');
     google.script.run
       .withSuccessHandler(function (res) {
         $('loginBtn').disabled = false;
-        session.user = res.user; session.pass = p;
+        session.user = res.user;
         Array.prototype.forEach.call(document.querySelectorAll('.whoami'), function (el) { el.textContent = res.user; });
         if (res.submitted) { loading(false); show('dupView'); return; }
         loading(true, 'กำลังโหลดแบบประเมิน...');
@@ -295,7 +311,7 @@
         $('loginBtn').disabled = false; loading(false);
         setMsg($('loginMsg'), 'err', err.message || err);
       })
-      .login(u, p);
+      .login(u);
   });
 
   $('surveyForm').addEventListener('submit', function (e) {
@@ -321,12 +337,12 @@
         loading(false); $('submitBtn').disabled = false;
         setMsg($('submitMsg'), 'err', err.message || err);
       })
-      .submitResponse(session.user, session.pass, d);
+      .submitResponse(session.user, d);
   });
 
   function logout() {
-    session = { user: '', pass: '' };
-    $('user').value = ''; $('pass').value = ''; $('loginMsg').className = 'msg';
+    session = { user: '' };
+    $('user').value = ''; $('loginMsg').className = 'msg';
     $('part1').innerHTML = ''; $('part2').innerHTML = ''; $('part3').value = ''; $('expertName').value = '';
     $('submitMsg').className = 'msg';
     show('loginView');

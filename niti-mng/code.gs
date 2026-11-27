@@ -4,7 +4,7 @@
  * ในยุคเศรษฐกิจดิจิทัล
  *
  * ใช้งานด้วย Google Apps Script (Web App) : code.gs + index.html
- * ผู้ใช้ niti01 - niti21 (ตอบได้คนละ 1 ครั้ง ระบบตรวจสอบการตอบซ้ำ)
+ * ผู้ใช้ ioc1 - ioc5 (ไม่ใช้รหัสผ่าน ตอบได้คนละ 1 ครั้ง บันทึกสถานะไว้ในชีต user_status)
  */
 
 // ===== ตั้งค่า =====
@@ -13,16 +13,10 @@
 var SPREADSHEET_ID = '1tNwd8OYORSbz3E288KTOuLcKISjDDoNiEboyP2VTBmA';
 var SHEET_RESPONSES = 'responses';
 var SHEET_SUMMARY = 'ioc_summary';
+var SHEET_STATUS = 'user_status';
 
-// รหัสผ่านของผู้ใช้แต่ละคน (ค่าเริ่มต้น = ชื่อผู้ใช้) แก้ไขได้ตามต้องการ
-var USERS = (function () {
-  var u = {};
-  for (var i = 1; i <= 21; i++) {
-    var id = 'niti' + (i < 10 ? '0' + i : i);
-    u[id] = id;
-  }
-  return u;
-})();
+// ผู้เชี่ยวชาญ IOC (ไม่ใช้รหัสผ่าน)
+var USERS = ['ioc1', 'ioc2', 'ioc3', 'ioc4', 'ioc5'];
 
 // ===== ข้อคำถาม (ตามต้นฉบับ ห้ามแก้ไข) =====
 var PART1 = [
@@ -232,33 +226,61 @@ function normUser_(u) {
   return String(u || '').trim().toLowerCase();
 }
 
-function checkCredential_(user, pass) {
+function checkUser_(user) {
   user = normUser_(user);
-  if (!USERS.hasOwnProperty(user)) throw new Error('ไม่พบชื่อผู้ใช้นี้ในระบบ (ใช้ niti01 - niti21)');
-  if (String(pass || '') !== USERS[user]) throw new Error('รหัสผ่านไม่ถูกต้อง');
+  if (USERS.indexOf(user) === -1) throw new Error('ไม่พบชื่อผู้ใช้นี้ในระบบ (ใช้ ioc1 - ioc5)');
   return user;
 }
 
-function hasSubmitted_(user) {
-  var sh = getResponseSheet_();
-  var last = sh.getLastRow();
-  if (last < 2) return false;
-  var users = sh.getRange(2, 2, last - 1, 1).getValues();
-  for (var i = 0; i < users.length; i++) {
-    if (normUser_(users[i][0]) === user) return true;
+/** ชีตสถานะผู้ใช้ : username | status | ชื่อผู้เชี่ยวชาญ | เวลาที่ส่ง */
+function getStatusSheet_() {
+  var ss = getSpreadsheet_();
+  var sh = ss.getSheetByName(SHEET_STATUS);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_STATUS);
+    sh.getRange(1, 1, 1, 4).setValues([['username', 'status', 'ชื่อผู้เชี่ยวชาญ', 'เวลาที่ส่ง']])
+      .setFontWeight('bold').setBackground('#fde047');
+    sh.setFrozenRows(1);
   }
-  return false;
+  // เติมผู้ใช้ที่ยังไม่มีในชีต
+  var last = sh.getLastRow();
+  var have = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues().map(function (r) { return normUser_(r[0]); }) : [];
+  var add = USERS.filter(function (u) { return have.indexOf(u) === -1; })
+    .map(function (u) { return [u, 'ยังไม่ตอบ', '', '']; });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 4).setValues(add);
+  return sh;
 }
 
-/** เรียกจากหน้าเว็บ: ตรวจสอบการเข้าสู่ระบบและการตอบซ้ำ */
-function login(user, pass) {
-  user = checkCredential_(user, pass);
+function findStatusRow_(sh, user) {
+  var last = sh.getLastRow();
+  if (last < 2) return -1;
+  var vals = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) if (normUser_(vals[i][0]) === user) return i + 2;
+  return -1;
+}
+
+function hasSubmitted_(user) {
+  var sh = getStatusSheet_();
+  var row = findStatusRow_(sh, user);
+  return row > 0 && String(sh.getRange(row, 2).getValue()) === 'ตอบแล้ว';
+}
+
+function markSubmitted_(user, name) {
+  var sh = getStatusSheet_();
+  var row = findStatusRow_(sh, user);
+  if (row < 0) { row = sh.getLastRow() + 1; sh.getRange(row, 1).setValue(user); }
+  sh.getRange(row, 2, 1, 3).setValues([['ตอบแล้ว', name, new Date()]]);
+}
+
+/** เรียกจากหน้าเว็บ: เข้าสู่ระบบด้วยชื่อผู้ใช้ และตรวจสถานะการตอบ */
+function login(user) {
+  user = checkUser_(user);
   return { ok: true, user: user, submitted: hasSubmitted_(user) };
 }
 
 /** เรียกจากหน้าเว็บ: บันทึกคำตอบ */
-function submitResponse(user, pass, payload) {
-  user = checkCredential_(user, pass);
+function submitResponse(user, payload) {
+  user = checkUser_(user);
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -279,6 +301,7 @@ function submitResponse(user, pass, payload) {
     });
     row.push(String(payload.part3 || '').trim());
     getResponseSheet_().appendRow(row);
+    markSubmitted_(user, name);
     SpreadsheetApp.flush();
     try { updateSummary(); } catch (e) { console.error(e); }
     return { ok: true, message: 'บันทึกคำตอบเรียบร้อยแล้ว ขอขอบพระคุณเป็นอย่างสูง' };
