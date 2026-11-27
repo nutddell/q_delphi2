@@ -172,6 +172,21 @@ var PART2 = [
   ]}
 ];
 
+// ===== ขออนุญาตสิทธิ์ (เจ้าของรันครั้งเดียวใน Apps Script editor) =====
+/**
+ * เลือกฟังก์ชัน authorize แล้วกด ▶ เรียกใช้ -> ตรวจสอบสิทธิ์ -> เลือกบัญชี
+ * -> ขั้นสูง -> ไปที่โปรเจกต์ (ไม่ปลอดภัย) -> อนุญาต
+ * หลังจากนี้ผู้เชี่ยวชาญจะไม่เห็นหน้าต่าง Authorization required อีก
+ */
+function authorize() {
+  getSpreadsheet_().getName();
+  getStatusSheet_();
+  getLetterFolder_().getName();
+  var tmp = DocumentApp.create('niti-mng authorize test');
+  DriveApp.getFileById(tmp.getId()).setTrashed(true);
+  Logger.log('อนุญาตสิทธิ์เรียบร้อย: Sheets, Docs, Drive พร้อมใช้งาน');
+}
+
 // ===== Web App =====
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')

@@ -407,7 +407,14 @@
       .withSuccessHandler(function (L) { showLetter(view, L); })
       .withFailureHandler(function (err) {
         v.querySelector('.dl-wait').classList.add('hidden');
-        setMsg(v.querySelector('.dl-err'), 'err', 'สร้างหนังสือตอบรับไม่สำเร็จ: ' + (err.message || err));
+        var m = String(err.message || err);
+        if (/authoriz|permission|สิทธิ์|googleapis\.com\/auth/i.test(m)) {
+          m = 'ระบบยังไม่พร้อมสร้างหนังสือตอบรับ คำตอบของท่านบันทึกเรียบร้อยแล้ว ' +
+              'ผู้วิจัยจะดำเนินการและส่งหนังสือตอบรับให้ท่านภายหลัง หรือท่านสามารถเข้าสู่ระบบอีกครั้งเพื่อดาวน์โหลดได้';
+        } else {
+          m = 'สร้างหนังสือตอบรับไม่สำเร็จ: ' + m;
+        }
+        setMsg(v.querySelector('.dl-err'), 'err', m);
       })
       .getLetter(session.user);
   }
