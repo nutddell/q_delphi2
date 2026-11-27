@@ -76,7 +76,9 @@
     .done-icon { font-size: 56px; }
     .dl { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
     .dl a { text-decoration: none; }
-    .dl .note { width: 100%; color: var(--muted); font-size: 14px; }
+    .dl .endnote { width: 100%; max-width: 640px; background: var(--y100); border: 1px solid var(--y300);
+                   border-radius: 12px; padding: 12px 16px; line-height: 1.8; }
+    .dl .endnote b { font-size: 18px; color: var(--y900); }
     .letter { background: #fff; border: 1px solid #e5e5e5; box-shadow: 0 4px 18px rgba(0,0,0,.08); max-width: 720px;
               margin: 16px auto; padding: 48px 56px 56px 72px; text-align: left; color: #111; font-size: 17px; line-height: 1.75; }
     .letter h3 { text-align: center; margin: 0 0 18px; font-size: 19px; }
@@ -145,7 +147,7 @@
     <div class="dl hidden">
       <a class="btn pdfLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด PDF</a>
       <a class="btn ghost docxLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด Word</a>
-      <div class="note">ดาวน์โหลดหนังสือตอบรับการเป็นผู้เชี่ยวชาญ เพื่อลงนามและใช้เป็นเอกสารอ้างอิง</div>
+      <div class="endnote"><b>กรุณาดาวน์โหลดไฟล์ และโปรดลงนาม</b><br>ผู้วิจัยขอขอบพระคุณท่านที่กรุณาเสียสละเวลาอันมีค่ามาเป็นผู้เชี่ยวชาญในการตรวจสอบคู่มือ</div>
     </div>
     <div class="dl-wait hidden" style="color:var(--muted)">กำลังสร้างหนังสือตอบรับ...</div>
     <div class="dl-err msg"></div>
@@ -161,7 +163,7 @@
     <div class="dl hidden">
       <a class="btn pdfLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด PDF</a>
       <a class="btn ghost docxLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด Word</a>
-      <div class="note">ดาวน์โหลดหนังสือตอบรับการเป็นผู้เชี่ยวชาญ เพื่อลงนามและใช้เป็นเอกสารอ้างอิง</div>
+      <div class="endnote"><b>กรุณาดาวน์โหลดไฟล์ และโปรดลงนาม</b><br>ผู้วิจัยขอขอบพระคุณท่านที่กรุณาเสียสละเวลาอันมีค่ามาเป็นผู้เชี่ยวชาญในการตรวจสอบคู่มือ</div>
     </div>
     <div class="dl-wait hidden" style="color:var(--muted)">กำลังสร้างหนังสือตอบรับ...</div>
     <div class="dl-err msg"></div>
