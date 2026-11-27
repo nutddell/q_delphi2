@@ -10,7 +10,7 @@
 // ===== ตั้งค่า =====
 // ใส่ ID ของ Google Sheet ที่ต้องการเก็บคำตอบ (ถ้าว่างไว้ จะใช้ชีตที่ผูกกับสคริปต์
 // หรือสร้างชีตใหม่ให้อัตโนมัติในครั้งแรก)
-var SPREADSHEET_ID = '';
+var SPREADSHEET_ID = '1tNwd8OYORSbz3E288KTOuLcKISjDDoNiEboyP2VTBmA';
 var SHEET_RESPONSES = 'responses';
 var SHEET_SUMMARY = 'ioc_summary';
 
