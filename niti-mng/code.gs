@@ -14,6 +14,16 @@ var SPREADSHEET_ID = '1tNwd8OYORSbz3E288KTOuLcKISjDDoNiEboyP2VTBmA';
 var SHEET_RESPONSES = 'responses';
 var SHEET_SUMMARY = 'ioc_summary';
 var SHEET_STATUS = 'user_status';
+var LETTER_FOLDER_NAME = 'niti-mng หนังสือตอบรับผู้เชี่ยวชาญ';
+
+// ข้อความหนังสือตอบรับการเป็นผู้เชี่ยวชาญ
+var LETTER = {
+  title: 'หนังสือตอบรับการเป็นผู้เชี่ยวชาญ',
+  body: 'ในการตรวจสอบคุณภาพของแบบสอบถาม ด้วยวิธีการ IOC งานวิทยานิพนธ์ เรื่อง การพัฒนารูปแบบศักยภาพของผู้จัดการนิติบุคคลในการบริหารระบบการดูแลอาคารที่พักอาศัยในยุคเศรษฐกิจดิจิทัล ของนักศึกษาปริญญาเอก นายพยัคฆ์ อุ่นใหม่ สาขาวิชาการพัฒนาธุรกิจอุตสาหกรรมและทรัพยากรมนุษย์ คณะพัฒนาธุรกิจและอุตสาหกรรม มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ'
+};
+
+// คอลัมน์ในชีต user_status
+var STATUS_HEADER = ['username', 'status', 'ชื่อผู้เชี่ยวชาญ', 'เวลาที่ส่ง', 'ตำแหน่ง', 'หน่วยงาน', 'หนังสือตอบรับ (Google Doc)'];
 
 // ผู้เชี่ยวชาญ IOC (ไม่ใช้รหัสผ่าน)
 var USERS = ['ioc1', 'ioc2', 'ioc3', 'ioc4', 'ioc5'];
@@ -238,9 +248,11 @@ function getStatusSheet_() {
   var sh = ss.getSheetByName(SHEET_STATUS);
   if (!sh) {
     sh = ss.insertSheet(SHEET_STATUS);
-    sh.getRange(1, 1, 1, 4).setValues([['username', 'status', 'ชื่อผู้เชี่ยวชาญ', 'เวลาที่ส่ง']])
-      .setFontWeight('bold').setBackground('#fde047');
     sh.setFrozenRows(1);
+  }
+  if (sh.getRange(1, STATUS_HEADER.length).getValue() !== STATUS_HEADER[STATUS_HEADER.length - 1]) {
+    sh.getRange(1, 1, 1, STATUS_HEADER.length).setValues([STATUS_HEADER])
+      .setFontWeight('bold').setBackground('#fde047');
   }
   // เติมผู้ใช้ที่ยังไม่มีในชีต
   var last = sh.getLastRow();
@@ -265,11 +277,11 @@ function hasSubmitted_(user) {
   return row > 0 && String(sh.getRange(row, 2).getValue()) === 'ตอบแล้ว';
 }
 
-function markSubmitted_(user, name) {
+function markSubmitted_(user, name, position, org) {
   var sh = getStatusSheet_();
   var row = findStatusRow_(sh, user);
   if (row < 0) { row = sh.getLastRow() + 1; sh.getRange(row, 1).setValue(user); }
-  sh.getRange(row, 2, 1, 3).setValues([['ตอบแล้ว', name, new Date()]]);
+  sh.getRange(row, 2, 1, 5).setValues([['ตอบแล้ว', name, new Date(), position, org]]);
 }
 
 /** เรียกจากหน้าเว็บ: เข้าสู่ระบบด้วยชื่อผู้ใช้ และตรวจสถานะการตอบ */
@@ -288,7 +300,11 @@ function submitResponse(user, payload) {
       return { ok: false, duplicate: true, message: 'ผู้ใช้ ' + user + ' ได้ตอบแบบประเมินแล้ว ไม่สามารถตอบซ้ำได้' };
     }
     var name = String(payload.name || '').trim();
+    var position = String(payload.position || '').trim();
+    var org = String(payload.org || '').trim();
     if (!name) throw new Error('กรุณากรอกชื่อผู้เชี่ยวชาญ');
+    if (!position) throw new Error('กรุณากรอกตำแหน่ง');
+    if (!org) throw new Error('กรุณากรอกหน่วยงาน');
     var row = [new Date(), user, name];
     getItems_().forEach(function (it) {
       var raw = payload.ratings ? payload.ratings[it.id] : null;
@@ -301,13 +317,106 @@ function submitResponse(user, payload) {
     });
     row.push(String(payload.part3 || '').trim());
     getResponseSheet_().appendRow(row);
-    markSubmitted_(user, name);
+    markSubmitted_(user, name, position, org);
     SpreadsheetApp.flush();
     try { updateSummary(); } catch (e) { console.error(e); }
-    return { ok: true, message: 'บันทึกคำตอบเรียบร้อยแล้ว ขอขอบพระคุณเป็นอย่างสูง' };
   } finally {
     lock.releaseLock();
   }
+  var letter = null;
+  try { letter = getLetter(user); } catch (e) { console.error(e); }
+  return { ok: true, message: 'บันทึกคำตอบเรียบร้อยแล้ว ขอขอบพระคุณเป็นอย่างสูง', letter: letter };
+}
+
+// ===== หนังสือตอบรับการเป็นผู้เชี่ยวชาญ =====
+function getLetterFolder_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('LETTER_FOLDER_ID');
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (e) { /* สร้างใหม่ */ }
+  }
+  var folder = DriveApp.createFolder(LETTER_FOLDER_NAME);
+  props.setProperty('LETTER_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+function letterLinks_(docId, info) {
+  return {
+    name: info.name, position: info.position, org: info.org,
+    title: LETTER.title, body: LETTER.body,
+    pdfUrl: 'https://docs.google.com/document/d/' + docId + '/export?format=pdf',
+    docxUrl: 'https://docs.google.com/document/d/' + docId + '/export?format=docx'
+  };
+}
+
+function createLetterDoc_(user, info) {
+  var doc = DocumentApp.create('หนังสือตอบรับผู้เชี่ยวชาญ - ' + info.name + ' (' + user + ')');
+  doc.setMarginTop(72).setMarginBottom(72).setMarginLeft(108).setMarginRight(72);
+  var body = doc.getBody();
+  body.clear();
+  var base = {};
+  base[DocumentApp.Attribute.FONT_FAMILY] = 'Sarabun';
+  base[DocumentApp.Attribute.FONT_SIZE] = 16;
+  base[DocumentApp.Attribute.BOLD] = false;
+  base[DocumentApp.Attribute.LINE_SPACING] = 1.15;
+  base[DocumentApp.Attribute.SPACING_AFTER] = 0;
+  base[DocumentApp.Attribute.SPACING_BEFORE] = 0;
+
+  function para(text, align, opts) {
+    var pa = body.appendParagraph(text);
+    pa.setAttributes(base);
+    pa.setAlignment(align || DocumentApp.HorizontalAlignment.LEFT);
+    opts = opts || {};
+    if (opts.bold) pa.setBold(true);
+    if (opts.indent) pa.setIndentFirstLine(opts.indent);
+    if (opts.indentStart) pa.setIndentStart(opts.indentStart);
+    if (opts.after) pa.setSpacingAfter(opts.after);
+    return pa;
+  }
+  var C = DocumentApp.HorizontalAlignment.CENTER;
+
+  para(LETTER.title, C, { bold: true, after: 18 });
+  para('ข้าพเจ้า ' + info.name + ' ' + info.position + ' ' + info.org, null, { indent: 54 });
+  para('☑ ยินดีเป็นผู้เชี่ยวชาญ                    ☐ ไม่ยินดีเป็นผู้เชี่ยวชาญ',
+       DocumentApp.HorizontalAlignment.LEFT, { indentStart: 54 });
+  para(LETTER.body, null, { indent: 54, after: 36 });
+  para('ลงชื่อ ................................................', C, { indentStart: 180 });
+  para('(' + info.name + ')', C, { indentStart: 180 });
+  para(info.position, C, { indentStart: 180 });
+  para(info.org, C, { indentStart: 180 });
+  // ลบย่อหน้าว่างแรกที่ Docs สร้างไว้
+  if (body.getNumChildren() > 1 && body.getChild(0).asParagraph().getText() === '') body.removeChild(body.getChild(0));
+  doc.saveAndClose();
+
+  var file = DriveApp.getFileById(doc.getId());
+  getLetterFolder_().addFile(file);
+  DriveApp.getRootFolder().removeFile(file);
+  // ให้ผู้เชี่ยวชาญดาวน์โหลดได้จากลิงก์ (ดูได้อย่างเดียว)
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return doc.getId();
+}
+
+/** เรียกจากหน้าเว็บ: คืนลิงก์ดาวน์โหลดหนังสือตอบรับ (สร้างให้ถ้ายังไม่มี) */
+function getLetter(user) {
+  user = checkUser_(user);
+  var sh = getStatusSheet_();
+  var row = findStatusRow_(sh, user);
+  if (row < 0 || String(sh.getRange(row, 2).getValue()) !== 'ตอบแล้ว') {
+    throw new Error('ต้องส่งแบบประเมินก่อน จึงจะดาวน์โหลดหนังสือตอบรับได้');
+  }
+  var v = sh.getRange(row, 1, 1, STATUS_HEADER.length).getValues()[0];
+  var info = { name: String(v[2]), position: String(v[4]), org: String(v[5]) };
+  var link = String(v[6] || '');
+  var m = link.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  var docId = m ? m[1] : '';
+  if (docId) {
+    try { DriveApp.getFileById(docId); } catch (e) { docId = ''; }
+  }
+  if (!docId) {
+    docId = createLetterDoc_(user, info);
+    sh.getRange(row, 7).setValue('https://docs.google.com/document/d/' + docId + '/edit');
+  }
+  return letterLinks_(docId, info);
 }
 
 /** สร้าง/ปรับปรุงชีตสรุปค่า IOC รายข้อ (รันเองได้จากเมนู Run) */

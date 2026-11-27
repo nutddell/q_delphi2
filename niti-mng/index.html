@@ -74,6 +74,18 @@
     .progress small { color: var(--muted); }
     .center { text-align: center; }
     .done-icon { font-size: 56px; }
+    .dl { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+    .dl a { text-decoration: none; }
+    .dl .note { width: 100%; color: var(--muted); font-size: 14px; }
+    .letter { background: #fff; border: 1px solid #e5e5e5; box-shadow: 0 4px 18px rgba(0,0,0,.08); max-width: 720px;
+              margin: 16px auto; padding: 48px 56px 56px 72px; text-align: left; color: #111; font-size: 17px; line-height: 1.75; }
+    .letter h3 { text-align: center; margin: 0 0 18px; font-size: 19px; }
+    .letter p { margin: 0; text-align: left; text-indent: 56px; }
+    .letter .chk { text-indent: 0; padding-left: 56px; display: flex; gap: 40px; flex-wrap: wrap; }
+    .letter .sign { margin-top: 30px; margin-left: 40%; text-align: center; }
+    .letter .sign div { text-indent: 0; }
+    @media (max-width: 600px) { .letter { padding: 24px 18px; font-size: 15px; } .letter p { text-indent: 28px; }
+      .letter .chk { padding-left: 0; gap: 10px; } .letter .sign { margin-left: 0; } }
     .hidden { display: none !important; }
     .loading { position: fixed; inset: 0; background: rgba(254,252,232,.8); display: flex; align-items: center;
                justify-content: center; z-index: 50; font-weight: 700; }
@@ -130,6 +142,13 @@
     <div class="done-icon">⚠️</div>
     <h2 style="border:0;padding:0">ท่านได้ตอบแบบประเมินแล้ว</h2>
     <p>ผู้ใช้ <b class="whoami"></b> ได้ส่งแบบประเมินเรียบร้อยแล้ว ระบบไม่อนุญาตให้ตอบซ้ำ</p>
+    <div class="dl hidden">
+      <a class="btn pdfLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด PDF</a>
+      <a class="btn ghost docxLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด Word</a>
+      <div class="note">ดาวน์โหลดหนังสือตอบรับการเป็นผู้เชี่ยวชาญ เพื่อลงนามและใช้เป็นเอกสารอ้างอิง</div>
+    </div>
+    <div class="dl-wait hidden" style="color:var(--muted)">กำลังสร้างหนังสือตอบรับ...</div>
+    <div class="dl-err msg"></div>
     <button class="btn ghost" onclick="logout()">ออกจากระบบ</button>
   </section>
 
@@ -138,6 +157,14 @@
     <div class="done-icon">✅</div>
     <h2 style="border:0;padding:0">บันทึกคำตอบเรียบร้อยแล้ว</h2>
     <p>ขอขอบพระคุณท่านเป็นอย่างสูงที่กรุณาช่วยตอบแบบประเมินความสอดคล้อง</p>
+    <div class="letter hidden" id="letterView"></div>
+    <div class="dl hidden">
+      <a class="btn pdfLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด PDF</a>
+      <a class="btn ghost docxLink" target="_blank" rel="noopener">⬇️ ดาวน์โหลด Word</a>
+      <div class="note">ดาวน์โหลดหนังสือตอบรับการเป็นผู้เชี่ยวชาญ เพื่อลงนามและใช้เป็นเอกสารอ้างอิง</div>
+    </div>
+    <div class="dl-wait hidden" style="color:var(--muted)">กำลังสร้างหนังสือตอบรับ...</div>
+    <div class="dl-err msg"></div>
     <button class="btn ghost" onclick="logout()">ออกจากระบบ</button>
   </section>
 
@@ -181,8 +208,13 @@
       </div>
 
       <div class="card">
-        <label for="expertName">ลงชื่อ ผู้เชี่ยวชาญ (ชื่อ - นามสกุล)</label>
-        <input type="text" id="expertName" required>
+        <h2>ข้อมูลผู้เชี่ยวชาญ (ใช้ออกหนังสือตอบรับการเป็นผู้เชี่ยวชาญ)</h2>
+        <label for="expertName">ลงชื่อ ผู้เชี่ยวชาญ (คำนำหน้า/ตำแหน่งทางวิชาการ ชื่อ - นามสกุล)</label>
+        <input type="text" id="expertName" placeholder="เช่น ผศ.ดร.สมชาย ใจดี" required>
+        <label for="expertPosition">ตำแหน่ง</label>
+        <input type="text" id="expertPosition" placeholder="เช่น ผู้อำนวยการสำนัก..." required>
+        <label for="expertOrg">หน่วยงาน / สังกัด</label>
+        <input type="text" id="expertOrg" placeholder="เช่น มหาวิทยาลัย..." required>
         <div style="margin-top:14px"><button class="btn" type="submit" id="submitBtn">ส่งแบบประเมิน</button></div>
         <div id="submitMsg" class="msg"></div>
       </div>
@@ -258,7 +290,8 @@
       ratings[id] = c ? c.value : '';
       comments[id] = f.elements['c_' + id].value;
     });
-    return { ratings: ratings, comments: comments, part3: $('part3').value, name: $('expertName').value };
+    return { ratings: ratings, comments: comments, part3: $('part3').value, name: $('expertName').value,
+             position: $('expertPosition').value, org: $('expertOrg').value };
   }
 
   function updateProgress() {
@@ -287,6 +320,8 @@
     });
     $('part3').value = d.part3 || '';
     $('expertName').value = d.name || '';
+    $('expertPosition').value = d.position || '';
+    $('expertOrg').value = d.org || '';
   }
 
   $('surveyForm').addEventListener('change', function () { updateProgress(); saveDraft(); });
@@ -301,7 +336,7 @@
         $('loginBtn').disabled = false;
         session.user = res.user;
         Array.prototype.forEach.call(document.querySelectorAll('.whoami'), function (el) { el.textContent = res.user; });
-        if (res.submitted) { loading(false); show('dupView'); return; }
+        if (res.submitted) { loading(false); show('dupView'); loadLetter('dupView'); return; }
         loading(true, 'กำลังโหลดแบบประเมิน...');
         google.script.run
           .withSuccessHandler(function (q) { render(q); loading(false); show('surveyView'); })
@@ -325,13 +360,15 @@
       return;
     }
     if (!d.name.trim()) { setMsg($('submitMsg'), 'err', 'กรุณากรอกชื่อผู้เชี่ยวชาญ'); $('expertName').focus(); return; }
+    if (!d.position.trim()) { setMsg($('submitMsg'), 'err', 'กรุณากรอกตำแหน่ง'); $('expertPosition').focus(); return; }
+    if (!d.org.trim()) { setMsg($('submitMsg'), 'err', 'กรุณากรอกหน่วยงาน'); $('expertOrg').focus(); return; }
     if (!confirm('ยืนยันการส่งแบบประเมิน? (ส่งได้เพียงครั้งเดียว)')) return;
     $('submitBtn').disabled = true; loading(true, 'กำลังบันทึก...');
     google.script.run
       .withSuccessHandler(function (res) {
         loading(false); $('submitBtn').disabled = false;
-        if (res.ok) { clearDraft(); show('doneView'); }
-        else if (res.duplicate) { clearDraft(); show('dupView'); }
+        if (res.ok) { clearDraft(); show('doneView'); if (res.letter) showLetter('doneView', res.letter); else loadLetter('doneView'); }
+        else if (res.duplicate) { clearDraft(); show('dupView'); loadLetter('dupView'); }
         else setMsg($('submitMsg'), 'err', res.message);
       })
       .withFailureHandler(function (err) {
@@ -341,10 +378,44 @@
       .submitResponse(session.user, d);
   });
 
+  function showLetter(view, L) {
+    var v = $(view);
+    v.querySelector('.dl-wait').classList.add('hidden');
+    v.querySelector('.pdfLink').href = L.pdfUrl;
+    v.querySelector('.docxLink').href = L.docxUrl;
+    v.querySelector('.dl').classList.remove('hidden');
+    var lv = v.querySelector('.letter');
+    if (lv) {
+      lv.innerHTML = '<h3>' + esc(L.title) + '</h3>' +
+        '<p>ข้าพเจ้า ' + esc(L.name) + ' ' + esc(L.position) + ' ' + esc(L.org) + '</p>' +
+        '<p class="chk"><span>☑ ยินดีเป็นผู้เชี่ยวชาญ</span><span>☐ ไม่ยินดีเป็นผู้เชี่ยวชาญ</span></p>' +
+        '<p>' + esc(L.body) + '</p>' +
+        '<div class="sign"><div>ลงชื่อ ................................................</div>' +
+        '<div>(' + esc(L.name) + ')</div><div>' + esc(L.position) + '</div><div>' + esc(L.org) + '</div></div>';
+      lv.classList.remove('hidden');
+    }
+  }
+
+  function loadLetter(view) {
+    var v = $(view);
+    v.querySelector('.dl').classList.add('hidden');
+    v.querySelector('.dl-err').className = 'dl-err msg';
+    v.querySelector('.dl-wait').classList.remove('hidden');
+    google.script.run
+      .withSuccessHandler(function (L) { showLetter(view, L); })
+      .withFailureHandler(function (err) {
+        v.querySelector('.dl-wait').classList.add('hidden');
+        setMsg(v.querySelector('.dl-err'), 'err', 'สร้างหนังสือตอบรับไม่สำเร็จ: ' + (err.message || err));
+      })
+      .getLetter(session.user);
+  }
+
   function logout() {
     session = { user: '' };
     $('user').value = ''; $('loginMsg').className = 'msg';
     $('part1').innerHTML = ''; $('part2').innerHTML = ''; $('part3').value = ''; $('expertName').value = '';
+    $('expertPosition').value = ''; $('expertOrg').value = '';
+    Array.prototype.forEach.call(document.querySelectorAll('.letter, .dl'), function (el) { el.classList.add('hidden'); });
     $('submitMsg').className = 'msg';
     show('loginView');
   }
