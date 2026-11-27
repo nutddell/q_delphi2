@@ -24,14 +24,19 @@ import argparse, json, math, os, re, sys, unicodedata
 
 # ---------------------------------------------------------------- text metrics
 # ค่า em ต่อ 1 ตัวอักษร ของฟอนต์ค่าเริ่มต้นที่ add_text ใช้ (วัดจาก Canva จริง)
+# ความกว้างจริงของฟอนต์ค่าเริ่มต้น Canva (วัด 10 ตัวติดกัน @16px, พ.ย. 2026)
+THAI_EM = {"ก": 0.6, "ข": 0.547, "ค": 0.614, "ง": 0.537, "จ": 0.532, "ฉ": 0.604, "ช": 0.55, "ซ": 0.556, "ญ": 0.909, "ฏ": 0.603, "ฒ": 0.903, "ณ": 0.909, "ด": 0.616, "ต": 0.636, "ถ": 0.602, "ท": 0.609, "ธ": 0.544, "น": 0.613, "บ": 0.604, "ป": 0.605, "ผ": 0.648, "ฝ": 0.652, "พ": 0.695, "ฟ": 0.682, "ภ": 0.603, "ม": 0.614, "ย": 0.594, "ร": 0.488, "ล": 0.571, "ว": 0.492, "ศ": 0.628, "ษ": 0.64, "ส": 0.572, "ห": 0.587, "อ": 0.574, "ะ": 0.338, "า": 0.406, "ำ": 0.406, "เ": 0.295, "แ": 0.568, "โ": 0.308, "ใ": 0.289, "ไ": 0.304, ".": 0.278, "1": 0.556}
+
 def char_em(c):
     cat = unicodedata.category(c)
     if cat == 'Mn':
         return 0.0                         # สระบน/ล่าง วรรณยุกต์ ไม่กินที่
+    if c in THAI_EM:
+        return THAI_EM[c]
     if '฀' <= c <= '๿':
         return 0.60
     if c == ' ':
-        return 0.26
+        return 0.278
     if c in '.,:;':
         return 0.28
     if c in '()[]':
@@ -39,7 +44,7 @@ def char_em(c):
     if c in '-/':
         return 0.36
     if c.isdigit():
-        return 0.57
+        return 0.556
     if c.isupper():
         return 0.70 if c in 'MW' else 0.66
     if c.islower():
@@ -69,6 +74,16 @@ def words(s):
         toks = word_tokenize(s, engine='newmm', keep_whitespace=True)
     except Exception:
         toks = re.findall(r'\s+|[A-Za-z0-9().,/-]+|[^\sA-Za-z0-9().,/-]', s)
+    # วลีที่ห้ามแยก (KEEP_WORDS เช่น "รถยนต์ไฟฟ้า", "อุปกรณ์ป้องกัน") -> รวมโทเคนที่ต่อกันเป็นวลีนั้น
+    if KEEP_WORDS:
+        merged, i = [], 0
+        while i < len(toks):
+            for j in range(len(toks), i + 1, -1):
+                if ''.join(toks[i:j]) in KEEP_WORDS:
+                    merged.append(''.join(toks[i:j])); i = j; break
+            else:
+                merged.append(toks[i]); i += 1
+        toks = merged
     # รวมโทเคนที่ห้ามขึ้นต้นบรรทัด (ช่องว่าง, วงเล็บปิด) เข้ากับคำก่อนหน้า
     # และห้ามจบบรรทัดด้วยคำนำหน้า/คำเชื่อม (การ ความ ให้ ใน ... ) -> ติดกับคำถัดไป
     out, glue = [], False
@@ -80,7 +95,8 @@ def words(s):
         glue = t.strip() in NO_BREAK_AFTER or bool(re.fullmatch(r'\d+(\.\d+)*\.?', t.strip()))
     return out
 
-NO_BREAK_AFTER = {'การ', 'ความ', 'ให้', 'ใน', 'ต่อ', 'ของ', 'จิต', 'ผู้', 'นัก', 'ที่', 'แห่ง', 'เพื่อ', 'กับ', 'ด้าน'}
+NO_BREAK_AFTER = {'การ', 'ความ', 'ให้', 'ใน', 'ต่อ', 'ของ', 'จิต', 'ผู้', 'นัก', 'ที่', 'แห่ง', 'เพื่อ', 'กับ', 'ด้าน', 'และ', 'หรือ', 'อย่าง'}
+KEEP_WORDS = set()   # ตั้งจาก options.keep_words ใน spec
 
 def wrap(s, fs, max_w, max_lines):
     """คืนรายการบรรทัดที่สมดุลที่สุด (บรรทัดน้อยที่สุดก่อน) หรือ None ถ้าไม่พอดี"""
@@ -113,6 +129,25 @@ def wrap(s, fs, max_w, max_lines):
         if dp[k][n][1] is not None:
             return dp[k][n][1]
     return None
+
+def wrap_caps(s, fs, caps, k=1.0):
+    """ตัดบรรทัดเมื่อแต่ละบรรทัดมีความยาวสูงสุดต่างกัน (เช่น ข้อความโค้งหลายบรรทัด: บรรทัดวงนอกยาวกว่าวงใน)
+    เลือกชุดจุดตัดที่ทุกบรรทัดพอดี และสัดส่วนเต็มบรรทัดสูงสุดต่ำที่สุด; คืน None ถ้าไม่พอดี"""
+    import itertools
+    if '\n' in s:
+        lines = s.split('\n')
+        if len(lines) != len(caps): return None
+        return lines if all(est_w(l, fs) * k <= c for l, c in zip(lines, caps)) else None
+    ws = words(s); n = len(ws); m = len(caps)
+    if m > n: return None
+    best = None
+    for cut in itertools.combinations(range(1, n), m - 1):
+        b = (0,) + cut + (n,)
+        lines = [''.join(ws[b[i]:b[i + 1]]).strip() for i in range(m)]
+        r = max(est_w(l, fs) * k / c for l, c in zip(lines, caps))
+        if r <= 1 and (best is None or r < best[0]):
+            best = (r, lines)
+    return best and best[1]
 
 # ---------------------------------------------------------------- geometry
 def norm(a):
@@ -216,8 +251,12 @@ def plan(spec, opt):
         if opt['angle_mode'] == 'equal_components':
             c_span = [a_span[ai] / len(comps)] * len(comps)
         else:
-            tot = sum(weight(c) for c in comps)
-            c_span = [a_span[ai] * weight(c) / tot for c in comps]
+            wts = [weight(c) for c in comps]
+            al = opt.get('comp_text_weight', 0)     # 0..1: ให้ชื่อยาวได้มุมกว้างขึ้นภายในด้านเดียวกัน
+            if al:
+                ln = [est_w(c['name'], 1) for c in comps]; mu = sum(ln) / len(ln)
+                wts = [w * ((1 - al) + al * l / mu) for w, l in zip(wts, ln)]
+            c_span = [a_span[ai] * w / sum(wts) for w in wts]
         cang = a0
         for ci, c in enumerate(comps):
             c0, c1 = cang, cang + c_span[ci]
@@ -276,10 +315,37 @@ def plan(spec, opt):
         T = 2 * r1 * math.sin(math.radians(c1 - c0) / 2) - 2 * pad - sepw
         if has_code and text_h(fcode, 1, 1) > 2 * (RB - code_len) * math.sin(math.radians(c1 - c0) / 2) - 2 * pad:
             return None
+        if opt.get('name_lens') and not has_code:
+            return lens_fit(c['name'], f, c0, c1, r1, r2)
         lines = wrap(c['name'], f, r2 - r1, opt['max_name_lines'])
         if not lines or text_h(f, len(lines), opt['name_lh']) > T:
             return None
         return lines, fcode, code_len, r1, r2
+    def lens_fit(name, f, c0, c1, r_lo, r_hi):
+        # ข้อความแนวรัศมีหลายบรรทัดในช่องลิ่ม: บรรทัดริม (ห่างแกนกลางลิ่ม) ต้องเริ่มไกลจุดศูนย์กลางกว่า
+        # -> ความยาวที่ยอมให้ต่างกันรายบรรทัด (บรรทัดกลางยาว บรรทัดริมสั้น) แล้วตัดคำด้วย wrap_caps
+        lh = opt['name_lh']; sh = math.sin(math.radians(c1 - c0) / 2)
+        best = None
+        for k in range(1, opt['max_name_lines'] + 1):
+            ds = [abs((i - (k - 1) / 2) * f * lh) + f * opt.get('lens_half', 0.62) + opt.get('lens_pad', pad) for i in range(k)]
+            if ds[0] / sh > r_hi: break
+            for rc in [r_lo + (r_hi - r_lo) * t / 20 for t in range(4, 17)]:
+                caps = []
+                for d in ds:
+                    rmin = max(r_lo, d / sh)
+                    rmax = min(r_hi, math.sqrt(max(r_hi ** 2 - d ** 2, 0)))
+                    caps.append(max(0, 2 * min(rc - rmin, rmax - rc)))
+                if min(caps) <= 0: continue
+                lines = wrap_caps(name, f, caps, 1.03)
+                if lines:
+                    sc = max(est_w(l, f) * 1.03 / cp for l, cp in zip(lines, caps))
+                    if best is None or sc < best[0]:
+                        best = (sc, lines, rc)
+            if best:
+                lines, rc = best[1], best[2]
+                L = max(est_w(l, f) for l in lines) * 1.15 + f
+                return lines, 0, 0, rc - L / 2 + pad, rc + L / 2 - pad
+        return None
     fs_name = fs_hi
     while fs_name > fs_lo and not all(comp_fit(c, c0, c1, fs_name) for c, c0, c1, _ in comp_geo):
         fs_name -= 1
@@ -314,16 +380,21 @@ def plan(spec, opt):
             s_ = 1 if up[0] * math.cos(math.radians(am)) + up[1] * math.sin(math.radians(am)) > 0 else -1
             label = a.get('label') or f"{a['code']} {a['name']}".strip()
             span_ok = (a1 - a0) - opt.get('arc_margin_deg', 6)
-            for k in range(1, opt.get('max_aspect_lines', 3) + 1):
+            n_fixed = label.count('\n') + 1 if '\n' in label else None
+            for k in ([n_fixed] if n_fixed else range(1, opt.get('max_aspect_lines', 3) + 1)):
                 tot = f * 1.2 + (k - 1) * f * lh
                 if tot > (RA - R0) - 2 * pad: break
-                r_in = rm - tot / 2 + f * 0.6          # รัศมีกึ่งกลางบรรทัดในสุด
-                # ความยาวที่ยอมให้ต่อบรรทัด = ความยาวส่วนโค้งที่รัศมีของบรรทัดในสุด (คับสุด)
-                lines = wrap(label, f, math.radians(span_ok) * r_in / 1.04, k)
-                if not lines: continue
-                radii = [rm + s_ * (tot / 2 - f * 0.6 - i * f * lh) for i in range(len(lines))]
-                if all(math.degrees(est_w(l, f) * 1.04 / r) <= span_ok for l, r in zip(lines, radii)):
-                    return lines, radii, am, s_, cols
+                # บรรทัดแรกอยู่ฝั่งหัวตัวอักษร: ครึ่งบน (s_=1) = วงนอก, ครึ่งล่าง = วงใน
+                # ถ้าไม่พอดีตรงกลางวงแหวน เลื่อนทั้งก้อนออกด้านนอก (ส่วนโค้งยาวขึ้น) ทีละ 3px จนชนขอบ
+                max_off = max(0, ((RA - R0) - 2 * pad - tot) / 2)
+                off = 0
+                while off <= max_off + 1e-6:
+                    radii = [rm + off + s_ * (tot / 2 - f * 0.6 - i * f * lh) for i in range(k)]
+                    caps = [math.radians(span_ok) * r for r in radii]
+                    lines = wrap_caps(label, f, caps, 1.04)
+                    if lines:
+                        return lines, radii, am, s_, cols
+                    off += 3
             return None
         f = opt['fs_aspect_name'][0]
         while f > opt['fs_aspect_name'][1] and not all(cfit(a, f) for a in aspects):
@@ -523,6 +594,7 @@ def main():
     if a.cmd == 'plan':
         spec = json.load(open(a.spec, encoding='utf-8'))
         opt = dict(DEFAULTS); opt.update(spec.get('options', {}))
+        KEEP_WORDS.update(opt.get('keep_words', []))
         if a.opt: opt.update(json.loads(a.opt))
         if a.size: opt['size'] = a.size
         if a.curved_aspect: opt['curved_aspect'] = True
