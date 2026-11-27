@@ -303,7 +303,41 @@ def plan(spec, opt):
                             box=(r2 - r1) + 2 * pad, tag=f'name:{c["code"]}:{idx}'))
 
     # ---- ASPECT label แบบ block: ข้อความเดียวหลายบรรทัด (เช่น "1. ด้านความรู้และเทคนิค...") แนวสัมผัส ไม่กลับหัว
-    if opt.get('aspect_style') == 'block':
+    if opt.get('aspect_style') == 'curved_block':
+        # ชื่อด้านหลายบรรทัด โค้งตามวงทุกบรรทัด (1 element ต่อ 1 กลุ่มอักษร) — บรรทัดแรกอยู่ฝั่ง "หัวตัวอักษร"
+        rm = (R0 + RA) / 2
+        lh = opt.get('aspect_lh', 1.25)
+        def cfit(a, f):
+            a0, a1, cols = a['_geo']; am = (a0 + a1) / 2
+            rot = upright(am + 90)
+            up = (math.sin(math.radians(rot)), -math.cos(math.radians(rot)))
+            s_ = 1 if up[0] * math.cos(math.radians(am)) + up[1] * math.sin(math.radians(am)) > 0 else -1
+            label = a.get('label') or f"{a['code']} {a['name']}".strip()
+            span_ok = (a1 - a0) - opt.get('arc_margin_deg', 6)
+            for k in range(1, opt.get('max_aspect_lines', 3) + 1):
+                tot = f * 1.2 + (k - 1) * f * lh
+                if tot > (RA - R0) - 2 * pad: break
+                r_in = rm - tot / 2 + f * 0.6          # รัศมีกึ่งกลางบรรทัดในสุด
+                # ความยาวที่ยอมให้ต่อบรรทัด = ความยาวส่วนโค้งที่รัศมีของบรรทัดในสุด (คับสุด)
+                lines = wrap(label, f, math.radians(span_ok) * r_in / 1.04, k)
+                if not lines: continue
+                radii = [rm + s_ * (tot / 2 - f * 0.6 - i * f * lh) for i in range(len(lines))]
+                if all(math.degrees(est_w(l, f) * 1.04 / r) <= span_ok for l, r in zip(lines, radii)):
+                    return lines, radii, am, s_, cols
+            return None
+        f = opt['fs_aspect_name'][0]
+        while f > opt['fs_aspect_name'][1] and not all(cfit(a, f) for a in aspects):
+            f -= 1
+        fc = fn = f
+        for a in aspects:
+            res = cfit(a, f)
+            if not res:
+                print(f'WARN: ป้ายด้าน {a["code"]} โค้งไม่พอดีวงแหวน', file=sys.stderr); continue
+            lines, radii, am, s_, cols = res
+            col = opt.get('aspect_color') or ink(cols[0])
+            for i, (ln, r) in enumerate(zip(lines, radii)):
+                texts.extend(curved(cx, cy, ln, r, am, f, 'bold', col, s_, tag=f'aspect:{a["code"]}:L{i}'))
+    elif opt.get('aspect_style') == 'block':
         rm = (R0 + RA) / 2
         def block_fit(a, f):
             a0, a1, cols = a['_geo']; am = (a0 + a1) / 2; rot = upright(am + 90)
@@ -413,7 +447,8 @@ def curved(cx, cy, text, r, am, fs, weight, color, s, tag):
         a = am + off if s > 0 else am - off       # ครึ่งล่าง: เดินทวนเข็มเพื่อให้อ่านซ้าย->ขวา
         x, y = pol(cx, cy, r, a)
         rot = norm(a + 90) if s > 0 else norm(a - 90)
-        out.append(dict(tag=f'{tag}:{k}', text=c, cx=x, cy=y, rot=rot, fs=fs, n=1, lh=1.0, weight=weight,
+        if c.strip():
+          out.append(dict(tag=f'{tag}:{k}', text=c, cx=x, cy=y, rot=rot, fs=fs, n=1, lh=1.0, weight=weight,
                         color=color, W=max(w * 1.6, fs)))
         acc += w
     return out
@@ -575,9 +610,11 @@ def main():
             e = idx.get((t['text'], t['init'][0], t['init'][1]))
             if not e:
                 # fallback: ข้อความเดียวกัน ที่ตำแหน่งใกล้ที่สุด
-                cands = [x for x in els if chars(x) == t['text']]
+                # สำรอง: ข้อความเดียวกันที่ตำแหน่งต่างกันไม่เกิน 1px เท่านั้น (ห้ามจับคู่ตัวอักษรซ้ำจากที่อื่น)
+                cands = [x for x in els if chars(x) == t['text']
+                         and abs(x['left'] - t['init'][0]) < 1 and abs(x['top'] - t['init'][1]) < 1]
                 if cands:
-                    e = min(cands, key=lambda x: (x['left'] - t['init'][0]) ** 2 + (x['top'] - t['init'][1]) ** 2)
+                    e = cands[0]
             if not e:
                 miss.append(t['tag']); continue
             t['locator'] = e['locator_id']
