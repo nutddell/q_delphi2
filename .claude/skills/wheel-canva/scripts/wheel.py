@@ -70,13 +70,17 @@ def words(s):
     except Exception:
         toks = re.findall(r'\s+|[A-Za-z0-9().,/-]+|[^\sA-Za-z0-9().,/-]', s)
     # รวมโทเคนที่ห้ามขึ้นต้นบรรทัด (ช่องว่าง, วงเล็บปิด) เข้ากับคำก่อนหน้า
-    out = []
+    # และห้ามจบบรรทัดด้วยคำนำหน้า/คำเชื่อม (การ ความ ให้ ใน ... ) -> ติดกับคำถัดไป
+    out, glue = [], False
     for t in toks:
-        if out and (t.isspace() or t[0] in ').,'):
+        if out and (glue or t.isspace() or t[0] in ').,'):
             out[-1] += t
         else:
             out.append(t)
+        glue = t.strip() in NO_BREAK_AFTER or bool(re.fullmatch(r'\d+(\.\d+)*\.?', t.strip()))
     return out
+
+NO_BREAK_AFTER = {'การ', 'ความ', 'ให้', 'ใน', 'ต่อ', 'ของ', 'จิต', 'ผู้', 'นัก', 'ที่', 'แห่ง', 'เพื่อ', 'กับ', 'ด้าน'}
 
 def wrap(s, fs, max_w, max_lines):
     """คืนรายการบรรทัดที่สมดุลที่สุด (บรรทัดน้อยที่สุดก่อน) หรือ None ถ้าไม่พอดี"""
@@ -177,21 +181,26 @@ DEFAULTS = dict(
 )
 
 def plan(spec, opt):
-    S = opt['size']; cx = cy = S / 2
+    S = opt['size']
+    PW, PH = opt.get('page') or (S, S)          # หน้ากระดาษไม่จำเป็นต้องจัตุรัส (เช่น A3 แนวนอน) วงล้ออยู่กลางหน้า
+    cx, cy = PW / 2, PH / 2
+    ring_c = opt.get('item_ring', True)          # False = 2 วงแหวน (ด้าน + องค์ประกอบ) ไม่มีวงรหัสข้อย่อย
+    weight = (lambda c: max(1, len(c['items']))) if ring_c else (lambda c: 1)
     R0, RA, RB, RC = (opt[k] * S for k in ('r_center', 'r_a', 'r_b', 'r_c'))
     pad, sepw = opt['pad'], opt['sep_w']
     shapes, texts = [], []
     aspects = spec['aspects']
-    n_items = sum(len(c['items']) for a in aspects for c in a['components'])
+    n_items = sum(weight(c) for a in aspects for c in a['components'])
     if opt['angle_mode'] == 'equal':
         a_span = [360 / len(aspects)] * len(aspects)
     else:
-        a_span = [360 * sum(len(c['items']) for c in a['components']) / n_items for a in aspects]
+        a_span = [360 * sum(weight(c) for c in a['components']) / n_items for a in aspects]
 
     # ---- center circle
     L, T, W, H, d = circle(cx, cy, R0)
     shapes.append(dict(tag='center', left=L, top=T, width=W, height=H, path=d,
-                       color=opt['center_color'], stroke_color=opt['sep_color'], stroke_weight=sepw * 2))
+                       color=opt['center_color'], stroke_color=opt.get('center_stroke') or opt['sep_color'],
+                       stroke_weight=opt.get('center_stroke_w') or sepw * 2))
 
     # ---- collect wedges and per-component geometry first (fonts are made uniform later)
     comp_geo, item_geo = [], []
@@ -207,8 +216,8 @@ def plan(spec, opt):
         if opt['angle_mode'] == 'equal_components':
             c_span = [a_span[ai] / len(comps)] * len(comps)
         else:
-            tot = sum(len(c['items']) for c in comps)
-            c_span = [a_span[ai] * len(c['items']) / tot for c in comps]
+            tot = sum(weight(c) for c in comps)
+            c_span = [a_span[ai] * weight(c) / tot for c in comps]
         cang = a0
         for ci, c in enumerate(comps):
             c0, c1 = cang, cang + c_span[ci]
@@ -217,7 +226,7 @@ def plan(spec, opt):
                                color=cols[1], stroke_color=opt['sep_color'], stroke_weight=sepw))
             comp_geo.append((c, c0, c1, cols))
             ni = len(c['items'])
-            for ii, it in enumerate(c['items']):
+            for ii, it in enumerate(c['items'] if ring_c else []):
                 i0 = c0 + (c1 - c0) * ii / ni; i1 = c0 + (c1 - c0) * (ii + 1) / ni
                 L, T, W, H, d = wedge(cx, cy, RB, RC, i0, i1)
                 shapes.append(dict(tag=f'C:{it}', left=L, top=T, width=W, height=H, path=d,
@@ -260,10 +269,12 @@ def plan(spec, opt):
     fs_hi, fs_lo = opt['fs_name']
     def comp_fit(c, c0, c1, f):
         fcode = round(f * opt['fs_code_ratio'])
-        code_len = est_w(c['code'], fcode)
-        r1, r2 = RA + pad, RB - pad - code_len - opt['gap_code']
+        has_code = bool(c.get('code')) and opt.get('show_comp_code', True)
+        code_len = est_w(c['code'], fcode) if has_code else 0
+        r1 = RA + opt.get('name_pad_in', pad)
+        r2 = RB - opt.get('name_pad_out', pad) - (code_len + opt['gap_code'] if has_code else 0)
         T = 2 * r1 * math.sin(math.radians(c1 - c0) / 2) - 2 * pad - sepw
-        if text_h(fcode, 1, 1) > 2 * (RB - code_len) * math.sin(math.radians(c1 - c0) / 2) - 2 * pad:
+        if has_code and text_h(fcode, 1, 1) > 2 * (RB - code_len) * math.sin(math.radians(c1 - c0) / 2) - 2 * pad:
             return None
         lines = wrap(c['name'], f, r2 - r1, opt['max_name_lines'])
         if not lines or text_h(f, len(lines), opt['name_lh']) > T:
@@ -284,37 +295,65 @@ def plan(spec, opt):
         lines, fcode, code_len, r1, r2 = res
         am = (c0 + c1) / 2
         col = ink(cols[1])
-        texts.append(radial(cx, cy, c['code'], RB - pad - code_len / 2, am, fcode, 1, 1.0, 'bold', col,
-                            box=code_len + 2 * pad, tag=f'code:{c["code"]}:{idx}'))
+        if code_len:
+            texts.append(radial(cx, cy, c['code'], RB - pad - code_len / 2, am, fcode, 1, 1.0, 'bold', col,
+                                box=code_len + 2 * pad, tag=f'code:{c["code"]}:{idx}'))
         txt = '\n'.join(lines)
-        texts.append(radial(cx, cy, txt, (r1 + r2) / 2, am, f, len(lines), opt['name_lh'], 'normal', col,
+        texts.append(radial(cx, cy, txt, (r1 + r2) / 2, am, f, len(lines), opt['name_lh'], opt.get('name_weight', 'normal'), opt.get('name_color') or col,
                             box=(r2 - r1) + 2 * pad, tag=f'name:{c["code"]}:{idx}'))
 
-    # ---- ASPECT code + name (ring A): tangential, upright; ฟอนต์เท่ากันทุกด้าน (ใช้ค่าที่พอดีกับด้านที่คับที่สุด)
-    rm = (R0 + RA) / 2
-    def aspect_layout(a, fc, fn):
-        a0, a1, cols = a['_geo']; am = (a0 + a1) / 2
-        rot = upright(am + 90)
-        up = (math.sin(math.radians(rot)), -math.cos(math.radians(rot)))
-        outward = (math.cos(math.radians(am)), math.sin(math.radians(am)))
-        s = 1 if up[0] * outward[0] + up[1] * outward[1] > 0 else -1   # 1 = หัวตัวอักษรชี้ออกนอกวง
-        hc, hn = text_h(fc, 1, 1), text_h(fn, 1, 1); tot = hc + hn
-        rc_code = rm + s * (tot / 2 - hc / 2); rc_name = rm - s * (tot / 2 - hn / 2)
-        ok = all(rect_in_ring(cx, cy, pol(cx, cy, r, am), rot, est_w(txt, f), text_h(f, 1, 1), R0 + pad, RA - pad)
-                 for txt, f, r in ((a['code'], fc, rc_code), (a['name'], fn, rc_name)))
-        return ok, am, rot, s, rc_code, rc_name, cols
-    fc, fn = opt['fs_aspect_code'][0], opt['fs_aspect_name'][0]
-    while not all(aspect_layout(a, fc, fn)[0] for a in aspects):
-        if fc <= opt['fs_aspect_code'][1] and fn <= opt['fs_aspect_name'][1]:
-            print('WARN: ป้ายด้านล้นวงแหวน — เพิ่ม r_a หรือย่อชื่อด้าน', file=sys.stderr); break
-        fc = max(opt['fs_aspect_code'][1], fc - 3); fn = max(opt['fs_aspect_name'][1], fn - 1)
-    for a in aspects:
-        ok, am, rot, s, rc_code, rc_name, cols = aspect_layout(a, fc, fn); col = ink(cols[0])
-        texts.append(tangential(cx, cy, a['code'], rc_code, am, fc, 'bold', col, tag=f'acode:{a["code"]}'))
-        if opt['curved_aspect']:
-            texts.extend(curved(cx, cy, a['name'], rc_name, am, fn, 'normal', col, s, tag=f'aname:{a["code"]}'))
-        else:
-            texts.append(tangential(cx, cy, a['name'], rc_name, am, fn, 'normal', col, tag=f'aname:{a["code"]}'))
+    # ---- ASPECT label แบบ block: ข้อความเดียวหลายบรรทัด (เช่น "1. ด้านความรู้และเทคนิค...") แนวสัมผัส ไม่กลับหัว
+    if opt.get('aspect_style') == 'block':
+        rm = (R0 + RA) / 2
+        def block_fit(a, f):
+            a0, a1, cols = a['_geo']; am = (a0 + a1) / 2; rot = upright(am + 90)
+            label = a.get('label') or f"{a['code']} {a['name']}".strip()
+            for k in range(1, opt.get('max_aspect_lines', 3) + 1):
+                # ความกว้างที่ยอมให้ = คอร์ดที่รัศมีด้านใน (ระวังกล่องตรงชนวงใน)
+                lines = wrap(label, f, 2 * (R0 + pad) * math.sin(math.radians(min(a1 - a0, 170)) / 2) * 1.25, k)
+                if not lines: continue
+                txt = '\n'.join(lines); h = text_h(f, len(lines), opt['name_lh'])
+                if rect_in_ring(cx, cy, pol(cx, cy, rm, am), rot, est_w(txt, f), h, R0 + pad, RA - pad):
+                    return txt, len(lines), am, cols
+            return None
+        f = opt['fs_aspect_name'][0]
+        while f > opt['fs_aspect_name'][1] and not all(block_fit(a, f) for a in aspects):
+            f -= 1
+        fc = fn = f
+        for a in aspects:
+            res = block_fit(a, f)
+            if not res:
+                print(f'WARN: ป้ายด้าน {a["code"]} ล้นวงแหวน', file=sys.stderr)
+                continue
+            txt, n, am, cols = res
+            texts.append(dict(tag=f'aspect:{a["code"]}', text=txt, cx=pol(cx, cy, rm, am)[0], cy=pol(cx, cy, rm, am)[1],
+                              rot=upright(am + 90), fs=f, n=n, lh=opt['name_lh'], weight='bold',
+                              color=opt.get('aspect_color') or ink(cols[0]), W=est_w(txt, f) * 1.15 + f))
+    else:
+        rm = (R0 + RA) / 2
+        def aspect_layout(a, fc, fn):
+            a0, a1, cols = a['_geo']; am = (a0 + a1) / 2
+            rot = upright(am + 90)
+            up = (math.sin(math.radians(rot)), -math.cos(math.radians(rot)))
+            outward = (math.cos(math.radians(am)), math.sin(math.radians(am)))
+            s = 1 if up[0] * outward[0] + up[1] * outward[1] > 0 else -1   # 1 = หัวตัวอักษรชี้ออกนอกวง
+            hc, hn = text_h(fc, 1, 1), text_h(fn, 1, 1); tot = hc + hn
+            rc_code = rm + s * (tot / 2 - hc / 2); rc_name = rm - s * (tot / 2 - hn / 2)
+            ok = all(rect_in_ring(cx, cy, pol(cx, cy, r, am), rot, est_w(txt, f), text_h(f, 1, 1), R0 + pad, RA - pad)
+                     for txt, f, r in ((a['code'], fc, rc_code), (a['name'], fn, rc_name)))
+            return ok, am, rot, s, rc_code, rc_name, cols
+        fc, fn = opt['fs_aspect_code'][0], opt['fs_aspect_name'][0]
+        while not all(aspect_layout(a, fc, fn)[0] for a in aspects):
+            if fc <= opt['fs_aspect_code'][1] and fn <= opt['fs_aspect_name'][1]:
+                print('WARN: ป้ายด้านล้นวงแหวน — เพิ่ม r_a หรือย่อชื่อด้าน', file=sys.stderr); break
+            fc = max(opt['fs_aspect_code'][1], fc - 3); fn = max(opt['fs_aspect_name'][1], fn - 1)
+        for a in aspects:
+            ok, am, rot, s, rc_code, rc_name, cols = aspect_layout(a, fc, fn); col = ink(cols[0])
+            texts.append(tangential(cx, cy, a['code'], rc_code, am, fc, 'bold', col, tag=f'acode:{a["code"]}'))
+            if opt['curved_aspect']:
+                texts.extend(curved(cx, cy, a['name'], rc_name, am, fn, 'normal', col, s, tag=f'aname:{a["code"]}'))
+            else:
+                texts.append(tangential(cx, cy, a['name'], rc_name, am, fn, 'normal', col, tag=f'aname:{a["code"]}'))
 
     # ---- title in center circle
     lines = spec['title'].split('\n')
@@ -331,11 +370,11 @@ def plan(spec, opt):
         if ok: break
         f -= 1
     texts.append(dict(tag='title', text=spec['title'], cx=cx, cy=cy, rot=0, fs=f, n=len(lines),
-                      lh=opt['title_lh'], weight='bold', color=ink(opt['center_color']),
+                      lh=opt['title_lh'], weight='bold', color=opt.get('title_color') or ink(opt['center_color']),
                       W=est_w(spec['title'], f) * 1.12 + 2 * f))
     order = {'ring': 0, 'chev': 1, 'C': 2, 'B': 3, 'A': 4, 'center': 5}   # วงลูกศรอยู่ล่างสุด, วงนอก->วงใน ให้ขอบขาววงในทับรอยต่อ
     shapes.sort(key=lambda s: order[s['tag'].split(':')[0]])
-    return dict(size=S, center=(cx, cy), radii=dict(center=R0, a=RA, b=RB, c=RC), shapes=shapes, texts=texts,
+    return dict(size=S, page=(PW, PH), center=(cx, cy), radii=dict(center=R0, a=RA, b=RB, c=RC), shapes=shapes, texts=texts,
                 fonts=dict(item=fs_item, name=fs_name, aspect_code=fc, aspect_name=fn, title=f))
 
 def rect_in_ring(cx, cy, c, rot, w, h, r_in, r_out):
@@ -582,8 +621,8 @@ def main():
 # ---------------------------------------------------------------- local preview (PIL) — ตรวจเลย์เอาต์ก่อนยิง Canva
 def preview(pl, out, scale=0.4):
     from PIL import Image, ImageDraw, ImageFont
-    S = pl['size']; k = scale
-    img = Image.new('RGB', (int(S * k), int(S * k)), 'white'); dr = ImageDraw.Draw(img)
+    PW, PH = pl.get('page') or (pl['size'], pl['size']); k = scale
+    img = Image.new('RGB', (int(PW * k), int(PH * k)), 'white'); dr = ImageDraw.Draw(img)
     cx, cy = pl['center']
     def fill_wedge(s):
         # วาดจาก path แบบหยาบ: สุ่มจุดตามขอบ
